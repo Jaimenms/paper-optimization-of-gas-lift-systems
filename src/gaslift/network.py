@@ -509,17 +509,21 @@ class Network:
                     f"node {node.name!r} is a divergent node (two or more pipes leave it); "
                     "the nodal model of the paper requires convergent tree networks"
                 )
+
+        def fmt(point) -> str:
+            return "(" + ", ".join(f"{float(v):g}" for v in point) + ")"
+
         for p in self._pipes:
             tail, head = self.node(p.start), self.node(p.end)
             if not np.allclose(p.geometry.start, tail.position, atol=1e-6):
                 issues.append(
-                    f"pipe {p.name!r}: geometry starts at {tuple(p.geometry.start)} but its tail "
-                    f"node {p.start!r} is at {tuple(tail.position)}"
+                    f"pipe {p.name!r}: geometry starts at {fmt(p.geometry.start)} but its tail "
+                    f"node {p.start!r} is at {fmt(tail.position)}"
                 )
             if not np.allclose(p.geometry.end, head.position, atol=1e-6):
                 issues.append(
-                    f"pipe {p.name!r}: geometry ends at {tuple(p.geometry.end)} but its head "
-                    f"node {p.end!r} is at {tuple(head.position)}"
+                    f"pipe {p.name!r}: geometry ends at {fmt(p.geometry.end)} but its head "
+                    f"node {p.end!r} is at {fmt(head.position)}"
                 )
         if math.isclose(np.linalg.matrix_rank(m), 0):
             issues.append("network has no pipes")

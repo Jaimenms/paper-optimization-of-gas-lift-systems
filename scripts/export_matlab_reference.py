@@ -1,8 +1,10 @@
 """Export the MATLAB results that back the paper into JSON reference files.
 
-The original ``.mat`` files live in ``docs/raw/Programa Atual/bbnet10/CASES`` (not
-versioned, 500 MB of raw material). This script converts the parts needed for
-validation into ``data/reference/*.json``:
+The original ``.mat`` files are part of the raw material of the paper, which is kept
+**outside the repository** (see ``docs/conventions.md``), in
+``~/code/personal/paper-raw-material/paper-optimization-of-gas-lift-systems/raw/``
+(``RAW_DIR`` below, overridable with the ``GASLIFT_RAW_DIR`` environment variable).
+This script converts the parts needed for validation into ``data/reference/*.json``:
 
 * ``case1_grid_2in.json`` / ``case1_grid_3in.json`` - rate sweeps of Case 1 with
   2-inch and 3-inch gas lines (``results_Subsea_1_2.mat``, ``results_Subsea_2.mat``);
@@ -16,13 +18,20 @@ Run with ``uv run --with scipy python scripts/export_matlab_reference.py``.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 
 import numpy as np
 from scipy.io import loadmat
 
 ROOT = Path(__file__).resolve().parents[1]
-CASES = ROOT / "docs" / "raw" / "Programa Atual" / "bbnet10" / "CASES"
+RAW_DIR = Path(
+    os.environ.get(
+        "GASLIFT_RAW_DIR",
+        Path.home() / "code" / "personal" / "paper-raw-material" / ROOT.name / "raw",
+    )
+)
+CASES = RAW_DIR / "Programa Atual" / "bbnet10" / "CASES"
 OUT = ROOT / "data" / "reference"
 
 GRIDS = {
@@ -71,7 +80,7 @@ def export_grid(path: Path, out: Path) -> None:
     ix_pw = p["ix_Pwell"][0, 0].astype(int).ravel() - 1
     ix_pg = p["ix_Pgaslift"][0, 0].astype(int).ravel() - 1
     res = {
-        "source": str(path.relative_to(ROOT)),
+        "source": str(path.relative_to(RAW_DIR)),
         "qgas": q_gas.tolist(),
         "qoil": q_oil.tolist(),
         "shape": [nx, ny],
@@ -141,6 +150,10 @@ def export_optima(out: Path) -> None:
 
 
 def main() -> None:
+    if not CASES.exists():
+        raise SystemExit(
+            f"raw material not found at {CASES}; set GASLIFT_RAW_DIR to the private raw folder"
+        )
     OUT.mkdir(parents=True, exist_ok=True)
     for name, path in GRIDS.items():
         export_grid(path, OUT / name)

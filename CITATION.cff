@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the original paper and this repository."
+title: "gaslift: two-phase pipe-network simulation and continuous gas-lift optimization (Python reimplementation)"
+type: software
+version: 0.1.0
+license: MIT
+authors:
+  - family-names: de Souza
+    given-names: Jaime N. M.
+references:
+  - type: article
+    title: "Modeling, simulation and optimization of continuous gas lift systems for deepwater offshore petroleum production"
+    authors:
+      - family-names: de Souza
+        given-names: Jaime N. M.
+      - family-names: de Medeiros
+        given-names: J. L.
+      - family-names: Costa
+        given-names: André L. H.
+      - family-names: Nunes
+        given-names: G. C.
+    journal: "Journal of Petroleum Science and Engineering"
+    volume: 72
+    issue: "3-4"
+    year: 2010
+    start: 277
+    end: 289
+    doi: 10.1016/j.petrol.2010.03.028

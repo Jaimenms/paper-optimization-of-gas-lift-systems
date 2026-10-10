@@ -1,0 +1,1121 @@
+{
+ "name": "case1",
+ "description": "Offshore single well with gas lift connected to a 4 km production line and a 1.5 km riser.",
+ "network": {
+  "name": "Case 1 - offshore single well",
+  "fluid": {
+   "liquid_density": 850.0,
+   "liquid_viscosity": 0.012,
+   "gas_viscosity": 8e-05,
+   "gas_reference_density": 80.0,
+   "reference_pressure": 10000000.0,
+   "gas_polytropic_coefficient": 1.25,
+   "interfacial_tension": 0.071,
+   "gas_normal_density": 1.2,
+   "gas_molecular_weight": 25.0
+  },
+  "nodes": [
+   {
+    "name": "manifold_1",
+    "x": 0.0,
+    "y": 0.0,
+    "z": -1400.0,
+    "role": "connection"
+   },
+   {
+    "name": "manifold_2",
+    "x": 0.0,
+    "y": 1500.0,
+    "z": -1400.0,
+    "role": "connection"
+   },
+   {
+    "name": "riser_base",
+    "x": 0.0,
+    "y": 4000.0,
+    "z": -1500.0,
+    "role": "connection"
+   },
+   {
+    "name": "riser_top",
+    "x": 0.0,
+    "y": 4000.0,
+    "z": 0.0,
+    "role": "outlet"
+   },
+   {
+    "name": "well_1:wellhead",
+    "x": 400.0,
+    "y": -300.0,
+    "z": -1400.0,
+    "role": "wellhead"
+   },
+   {
+    "name": "well_1:injection_point",
+    "x": 400.0,
+    "y": -300.0,
+    "z": -3110.0,
+    "role": "injection_point"
+   },
+   {
+    "name": "well_1:downhole",
+    "x": 400.0,
+    "y": -300.0,
+    "z": -3448.0,
+    "role": "downhole"
+   },
+   {
+    "name": "well_1:annulus_top",
+    "x": 400.0,
+    "y": -300.0,
+    "z": -1400.0,
+    "role": "annulus_top"
+   },
+   {
+    "name": "well_1:gas_junction",
+    "x": 0.0,
+    "y": 4000.0,
+    "z": -1495.0,
+    "role": "gas_junction"
+   },
+   {
+    "name": "well_1:gas_inlet",
+    "x": 0.0,
+    "y": 4000.0,
+    "z": 20.0,
+    "role": "gas_inlet"
+   }
+  ],
+  "pipes": [
+   {
+    "name": "production_line_1",
+    "start": "manifold_1",
+    "end": "manifold_2",
+    "category": "production",
+    "initial_liquid_holdup": 0.5,
+    "geometry": {
+     "points": [
+      [
+       0.0,
+       0.0,
+       -1400.0
+      ],
+      [
+       0.0,
+       1500.0,
+       -1400.0
+      ]
+     ],
+     "diameters": [
+      0.15239999999999998,
+      0.15239999999999998
+     ],
+     "roughness": [
+      0.0001,
+      0.0001
+     ],
+     "equivalent_length": 0.0,
+     "transition_length": 1.0
+    }
+   },
+   {
+    "name": "production_line_2",
+    "start": "manifold_2",
+    "end": "riser_base",
+    "category": "production",
+    "initial_liquid_holdup": 0.5,
+    "geometry": {
+     "points": [
+      [
+       0.0,
+       1500.0,
+       -1400.0
+      ],
+      [
+       0.0,
+       3000.0,
+       -1400.0
+      ],
+      [
+       0.0,
+       4000.0,
+       -1500.0
+      ]
+     ],
+     "diameters": [
+      0.15239999999999998,
+      0.15239999999999998,
+      0.15239999999999998
+     ],
+     "roughness": [
+      0.0001,
+      0.0001,
+      0.0001
+     ],
+     "equivalent_length": 0.0,
+     "transition_length": 1.0
+    }
+   },
+   {
+    "name": "riser",
+    "start": "riser_base",
+    "end": "riser_top",
+    "category": "production",
+    "initial_liquid_holdup": 0.5,
+    "geometry": {
+     "points": [
+      [
+       0.0,
+       4000.0,
+       -1500.0
+      ],
+      [
+       0.0,
+       4000.0,
+       0.0
+      ]
+     ],
+     "diameters": [
+      0.15239999999999998,
+      0.15239999999999998
+     ],
+     "roughness": [
+      0.0001,
+      0.0001
+     ],
+     "equivalent_length": 0.0,
+     "transition_length": 1.0
+    }
+   },
+   {
+    "name": "well_1:flowline",
+    "start": "well_1:wellhead",
+    "end": "manifold_1",
+    "category": "flowline",
+    "initial_liquid_holdup": 0.5,
+    "geometry": {
+     "points": [
+      [
+       400.0,
+       -300.0,
+       -1400.0
+      ],
+      [
+       0.0,
+       0.0,
+       -1400.0
+      ]
+     ],
+     "diameters": [
+      0.1016,
+      0.1016
+     ],
+     "roughness": [
+      0.0001,
+      0.0001
+     ],
+     "equivalent_length": 0.0,
+     "transition_length": 1.0
+    }
+   },
+   {
+    "name": "well_1:wellbore_upper",
+    "start": "well_1:injection_point",
+    "end": "well_1:wellhead",
+    "category": "wellbore",
+    "initial_liquid_holdup": 0.5,
+    "geometry": {
+     "points": [
+      [
+       400.0,
+       -300.0,
+       -3110.0
+      ],
+      [
+       400.0,
+       -300.0,
+       -1400.0
+      ]
+     ],
+     "diameters": [
+      0.1016,
+      0.1016
+     ],
+     "roughness": [
+      0.0001,
+      0.0001
+     ],
+     "equivalent_length": 0.0,
+     "transition_length": 1.0
+    }
+   },
+   {
+    "name": "well_1:wellbore_lower",
+    "start": "well_1:downhole",
+    "end": "well_1:injection_point",
+    "category": "wellbore",
+    "initial_liquid_holdup": 0.5,
+    "geometry": {
+     "points": [
+      [
+       400.0,
+       -300.0,
+       -3448.0
+      ],
+      [
+       400.0,
+       -300.0,
+       -3110.0
+      ]
+     ],
+     "diameters": [
+      0.1016,
+      0.1016
+     ],
+     "roughness": [
+      0.0001,
+      0.0001
+     ],
+     "equivalent_length": 0.0,
+     "transition_length": 1.0
+    }
+   },
+   {
+    "name": "well_1:annulus",
+    "start": "well_1:annulus_top",
+    "end": "well_1:injection_point",
+    "category": "annulus",
+    "initial_liquid_holdup": 0.0,
+    "geometry": {
+     "points": [
+      [
+       400.0,
+       -300.0,
+       -3110.0
+      ],
+      [
+       400.0,
+       -300.0,
+       -1400.0
+      ]
+     ],
+     "diameters": [
+      0.21045714285714284,
+      0.21045714285714284
+     ],
+     "roughness": [
+      0.0001,
+      0.0001
+     ],
+     "equivalent_length": 0.0,
+     "transition_length": 1.0
+    }
+   },
+   {
+    "name": "well_1:gas_line_1",
+    "start": "well_1:gas_junction",
+    "end": "well_1:annulus_top",
+    "category": "gas",
+    "initial_liquid_holdup": 0.0,
+    "geometry": {
+     "points": [
+      [
+       0.0,
+       4000.0,
+       -1495.0
+      ],
+      [
+       0.0,
+       3000.0,
+       -1395.0
+      ],
+      [
+       0.0,
+       1500.0,
+       -1395.0
+      ],
+      [
+       0.0,
+       0.0,
+       -1395.0
+      ],
+      [
+       400.0,
+       -300.0,
+       -1400.0
+      ]
+     ],
+     "diameters": [
+      0.0508,
+      0.0508,
+      0.0508,
+      0.0508,
+      0.0508
+     ],
+     "roughness": [
+      0.0,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+     ],
+     "equivalent_length": 0.0,
+     "transition_length": 1.0
+    }
+   },
+   {
+    "name": "well_1:gas_line_2",
+    "start": "well_1:gas_inlet",
+    "end": "well_1:gas_junction",
+    "category": "gas",
+    "initial_liquid_holdup": 0.0,
+    "geometry": {
+     "points": [
+      [
+       0.0,
+       4000.0,
+       20.0
+      ],
+      [
+       0.0,
+       4000.0,
+       -1495.0
+      ]
+     ],
+     "diameters": [
+      0.0508,
+      0.0508
+     ],
+     "roughness": [
+      0.0,
+      0.0
+     ],
+     "equivalent_length": 0.0,
+     "transition_length": 1.0
+    }
+   }
+  ],
+  "wells": [
+   {
+    "name": "well_1",
+    "wellhead": "well_1:wellhead",
+    "injection_point": "well_1:injection_point",
+    "downhole": "well_1:downhole",
+    "annulus_top": "well_1:annulus_top",
+    "gas_junction": "well_1:gas_junction",
+    "gas_inlet": "well_1:gas_inlet",
+    "flowline": "well_1:flowline",
+    "wellbore_upper": "well_1:wellbore_upper",
+    "wellbore_lower": "well_1:wellbore_lower",
+    "annulus": "well_1:annulus",
+    "gas_line_1": "well_1:gas_line_1",
+    "gas_line_2": "well_1:gas_line_2",
+    "design": {
+     "name": "well_1",
+     "attach_to": "manifold_1",
+     "wellhead": [
+      400.0,
+      -300.0,
+      -1400.0
+     ],
+     "wellbore_diameter": 0.1016,
+     "wellbore_length": 2048.0,
+     "annulus_length": 1710.0,
+     "annulus_outer_diameter": 0.254,
+     "gas_line_diameter": 0.0508,
+     "gas_line_1_path": [
+      [
+       0.0,
+       4000.0,
+       -1495.0
+      ],
+      [
+       0.0,
+       3000.0,
+       -1395.0
+      ],
+      [
+       0.0,
+       1500.0,
+       -1395.0
+      ],
+      [
+       0.0,
+       0.0,
+       -1395.0
+      ]
+     ],
+     "gas_line_2_path": [
+      [
+       0.0,
+       4000.0,
+       20.0
+      ],
+      [
+       0.0,
+       4000.0,
+       -1495.0
+      ]
+     ],
+     "wellbore_roughness": 0.0001,
+     "annulus_roughness": 0.0001,
+     "gas_line_roughness": 0.0,
+     "annulus_orientation": "matlab",
+     "annulus_diameter_model": "matlab"
+    }
+   }
+  ]
+ },
+ "specifications": {
+  "manifold_1": {
+   "liquid_flow": 0.0,
+   "gas_flow": 0.0
+  },
+  "manifold_2": {
+   "liquid_flow": 0.0,
+   "gas_flow": 0.0
+  },
+  "riser_base": {
+   "liquid_flow": 0.0,
+   "gas_flow": 0.0
+  },
+  "riser_top": {
+   "pressure": 1500000.0
+  },
+  "well_1:wellhead": {
+   "liquid_flow": 0.0,
+   "gas_flow": 0.0
+  },
+  "well_1:injection_point": {
+   "liquid_flow": 0.0,
+   "gas_flow": 0.0
+  },
+  "well_1:downhole": {
+   "liquid_flow": 10.0,
+   "gas_flow": 1e-06
+  },
+  "well_1:annulus_top": {
+   "liquid_flow": 0.0,
+   "gas_flow": 0.0
+  },
+  "well_1:gas_junction": {
+   "liquid_flow": 0.0,
+   "gas_flow": 0.0
+  },
+  "well_1:gas_inlet": {
+   "liquid_flow": 1e-06,
+   "gas_flow": 2.0
+  }
+ },
+ "wells": [
+  "well_1"
+ ],
+ "paper_node_numbers": {
+  "manifold_1": 1,
+  "manifold_2": 2,
+  "riser_base": 3,
+  "riser_top": 4,
+  "well_1:wellhead": 5,
+  "well_1:injection_point": 6,
+  "well_1:downhole": 7,
+  "well_1:annulus_top": 8,
+  "well_1:gas_junction": 9,
+  "well_1:gas_inlet": 10
+ },
+ "paper_pipe_numbers": {
+  "production_line_1": 1,
+  "production_line_2": 2,
+  "riser": 3,
+  "well_1:flowline": 4,
+  "well_1:wellbore_upper": 5,
+  "well_1:wellbore_lower": 6,
+  "well_1:annulus": 7,
+  "well_1:gas_line_1": 8,
+  "well_1:gas_line_2": 9
+ },
+ "study": {
+  "integration_rtol": 0.01,
+  "operating_points": [
+   {
+    "name": "text_section_4.1",
+    "paper": "Section 4.1 text (reading of Fig. 6)",
+    "q_oil": 10.0,
+    "q_gas": 2.0
+   },
+   {
+    "name": "matlab_grid_2in_0_0",
+    "paper": "Fig. 6 / Fig. 7 sweep point",
+    "q_oil": 0.5,
+    "q_gas": 0.5,
+    "rtol": 0.001,
+    "reference": {
+     "grid": "case1_grid_2in.json",
+     "index": [
+      0,
+      0
+     ]
+    }
+   },
+   {
+    "name": "matlab_grid_2in_2_1",
+    "paper": "Fig. 6 / Fig. 7 sweep point",
+    "q_oil": 2.0,
+    "q_gas": 1.0,
+    "rtol": 0.001,
+    "reference": {
+     "grid": "case1_grid_2in.json",
+     "index": [
+      2,
+      1
+     ]
+    }
+   },
+   {
+    "name": "matlab_grid_2in_5_5",
+    "paper": "Fig. 6 / Fig. 7 sweep point",
+    "q_oil": 5.0,
+    "q_gas": 3.0,
+    "rtol": 0.001,
+    "reference": {
+     "grid": "case1_grid_2in.json",
+     "index": [
+      5,
+      5
+     ]
+    }
+   },
+   {
+    "name": "matlab_grid_2in_10_3",
+    "paper": "Fig. 6 / Fig. 7 sweep point",
+    "q_oil": 10.0,
+    "q_gas": 2.0,
+    "rtol": 0.001,
+    "reference": {
+     "grid": "case1_grid_2in.json",
+     "index": [
+      10,
+      3
+     ]
+    }
+   },
+   {
+    "name": "matlab_grid_2in_15_7",
+    "paper": "Fig. 6 / Fig. 7 sweep point",
+    "q_oil": 15.0,
+    "q_gas": 4.0,
+    "rtol": 0.001,
+    "reference": {
+     "grid": "case1_grid_2in.json",
+     "index": [
+      15,
+      7
+     ]
+    }
+   },
+   {
+    "name": "matlab_grid_2in_20_2",
+    "paper": "Fig. 6 / Fig. 7 sweep point",
+    "q_oil": 20.0,
+    "q_gas": 1.5,
+    "rtol": 0.001,
+    "reference": {
+     "grid": "case1_grid_2in.json",
+     "index": [
+      20,
+      2
+     ]
+    }
+   },
+   {
+    "name": "matlab_grid_3in_10_3",
+    "paper": "Fig. 8 sweep point",
+    "q_oil": 10.0,
+    "q_gas": 2.0,
+    "gas_line_diameter_in": 3.0,
+    "rtol": 0.001,
+    "reference": {
+     "grid": "case1_grid_3in.json",
+     "index": [
+      10,
+      3
+     ]
+    }
+   },
+   {
+    "name": "matlab_grid_3in_4_6",
+    "paper": "Fig. 8 sweep point",
+    "q_oil": 4.0,
+    "q_gas": 3.5,
+    "gas_line_diameter_in": 3.0,
+    "rtol": 0.001,
+    "reference": {
+     "grid": "case1_grid_3in.json",
+     "index": [
+      4,
+      6
+     ]
+    }
+   }
+  ],
+  "sweeps": [
+   {
+    "name": "fig06_fig07_2in",
+    "paper": [
+     "Fig. 6",
+     "Fig. 7"
+    ],
+    "q_gas": [
+     0.5,
+     1.0,
+     1.5,
+     2.0,
+     2.5,
+     3.0,
+     3.5,
+     4.0
+    ],
+    "q_oil": [
+     0.5,
+     1.0,
+     2.0,
+     3.0,
+     4.0,
+     5.0,
+     6.0,
+     7.0,
+     8.0,
+     9.0,
+     10.0,
+     11.0,
+     12.0,
+     13.0,
+     14.0,
+     15.0,
+     16.0,
+     17.0,
+     18.0,
+     19.0,
+     20.0
+    ],
+    "rtol": 0.001,
+    "reference": "case1_grid_2in.json"
+   },
+   {
+    "name": "fig08_3in",
+    "paper": [
+     "Fig. 8"
+    ],
+    "q_gas": [
+     0.5,
+     1.0,
+     1.5,
+     2.0,
+     2.5,
+     3.0,
+     3.5,
+     4.0
+    ],
+    "q_oil": [
+     0.5,
+     1.0,
+     2.0,
+     3.0,
+     4.0,
+     5.0,
+     6.0,
+     7.0,
+     8.0,
+     9.0,
+     10.0,
+     11.0,
+     12.0,
+     13.0,
+     14.0,
+     15.0,
+     16.0,
+     17.0,
+     18.0,
+     19.0,
+     20.0
+    ],
+    "gas_line_diameter_in": 3.0,
+    "rtol": 0.001,
+    "reference": "case1_grid_3in.json"
+   }
+  ],
+  "optimizations": [
+   {
+    "name": "fig13_180bar",
+    "paper": [
+     "Fig. 13",
+     "Fig. 14"
+    ],
+    "objective": "max_production",
+    "reservoirs": [
+     {
+      "pressure": 180.0,
+      "productivity_index": null
+     }
+    ],
+    "oil_bounds": [
+     5.0,
+     20.0
+    ],
+    "gas_bounds": [
+     1.0,
+     4.0
+    ],
+    "x0": {
+     "q_oil": 10.0,
+     "q_gas": 2.0
+    },
+    "reference": "case1_maxprod_piinf_180bar"
+   },
+   {
+    "name": "fig13_200bar",
+    "paper": [
+     "Fig. 13",
+     "Fig. 14"
+    ],
+    "objective": "max_production",
+    "reservoirs": [
+     {
+      "pressure": 200.0,
+      "productivity_index": null
+     }
+    ],
+    "oil_bounds": [
+     5.0,
+     20.0
+    ],
+    "gas_bounds": [
+     1.0,
+     4.0
+    ],
+    "x0": {
+     "q_oil": 10.0,
+     "q_gas": 2.0
+    },
+    "reference": "case1_maxprod_piinf_200bar"
+   },
+   {
+    "name": "fig13_220bar",
+    "paper": [
+     "Fig. 13",
+     "Fig. 14"
+    ],
+    "objective": "max_production",
+    "reservoirs": [
+     {
+      "pressure": 220.0,
+      "productivity_index": null
+     }
+    ],
+    "oil_bounds": [
+     5.0,
+     20.0
+    ],
+    "gas_bounds": [
+     1.0,
+     4.0
+    ],
+    "x0": {
+     "q_oil": 10.0,
+     "q_gas": 2.0
+    },
+    "reference": "case1_maxprod_piinf_220bar"
+   },
+   {
+    "name": "fig13_240bar",
+    "paper": [
+     "Fig. 13",
+     "Fig. 14"
+    ],
+    "objective": "max_production",
+    "reservoirs": [
+     {
+      "pressure": 240.0,
+      "productivity_index": null
+     }
+    ],
+    "oil_bounds": [
+     5.0,
+     20.0
+    ],
+    "gas_bounds": [
+     1.0,
+     4.0
+    ],
+    "x0": {
+     "q_oil": 10.0,
+     "q_gas": 2.0
+    },
+    "reference": "case1_maxprod_piinf_240bar"
+   },
+   {
+    "name": "fig13_260bar",
+    "paper": [
+     "Fig. 13",
+     "Fig. 14"
+    ],
+    "objective": "max_production",
+    "reservoirs": [
+     {
+      "pressure": 260.0,
+      "productivity_index": null
+     }
+    ],
+    "oil_bounds": [
+     5.0,
+     20.0
+    ],
+    "gas_bounds": [
+     1.0,
+     4.0
+    ],
+    "x0": {
+     "q_oil": 10.0,
+     "q_gas": 2.0
+    },
+    "reference": "case1_maxprod_piinf_260bar"
+   },
+   {
+    "name": "fig15_pi0.5",
+    "paper": [
+     "Fig. 15"
+    ],
+    "objective": "max_production",
+    "reservoirs": [
+     {
+      "pressure": 220.0,
+      "productivity_index": 0.5
+     }
+    ],
+    "oil_bounds": [
+     5.0,
+     20.0
+    ],
+    "gas_bounds": [
+     1.0,
+     4.0
+    ],
+    "x0": {
+     "q_oil": 10.0,
+     "q_gas": 2.0
+    },
+    "reference": "case1_maxprod_pi0.5_220bar"
+   },
+   {
+    "name": "fig15_pi1",
+    "paper": [
+     "Fig. 15",
+     "Table 13 (Max)"
+    ],
+    "objective": "max_production",
+    "reservoirs": [
+     {
+      "pressure": 220.0,
+      "productivity_index": 1.0
+     }
+    ],
+    "oil_bounds": [
+     5.0,
+     20.0
+    ],
+    "gas_bounds": [
+     1.0,
+     4.0
+    ],
+    "x0": {
+     "q_oil": 10.0,
+     "q_gas": 2.0
+    },
+    "reference": "case1_maxprod_pi1_220bar",
+    "published": {
+     "table": "table13",
+     "column": "Max"
+    }
+   },
+   {
+    "name": "fig15_pi2",
+    "paper": [
+     "Fig. 15"
+    ],
+    "objective": "max_production",
+    "reservoirs": [
+     {
+      "pressure": 220.0,
+      "productivity_index": 2.0
+     }
+    ],
+    "oil_bounds": [
+     5.0,
+     20.0
+    ],
+    "gas_bounds": [
+     1.0,
+     4.0
+    ],
+    "x0": {
+     "q_oil": 10.0,
+     "q_gas": 2.0
+    },
+    "reference": "case1_maxprod_pi2_220bar"
+   },
+   {
+    "name": "fig15_pi5",
+    "paper": [
+     "Fig. 15"
+    ],
+    "objective": "max_production",
+    "reservoirs": [
+     {
+      "pressure": 220.0,
+      "productivity_index": 5.0
+     }
+    ],
+    "oil_bounds": [
+     5.0,
+     20.0
+    ],
+    "gas_bounds": [
+     1.0,
+     4.0
+    ],
+    "x0": {
+     "q_oil": 10.0,
+     "q_gas": 2.0
+    },
+    "reference": "case1_maxprod_pi5_220bar"
+   },
+   {
+    "name": "fig15_pi10",
+    "paper": [
+     "Fig. 15"
+    ],
+    "objective": "max_production",
+    "reservoirs": [
+     {
+      "pressure": 220.0,
+      "productivity_index": 10.0
+     }
+    ],
+    "oil_bounds": [
+     5.0,
+     20.0
+    ],
+    "gas_bounds": [
+     1.0,
+     4.0
+    ],
+    "x0": {
+     "q_oil": 10.0,
+     "q_gas": 2.0
+    },
+    "reference": "case1_maxprod_pi10_220bar"
+   },
+   {
+    "name": "table13_scenario1",
+    "paper": [
+     "Table 13",
+     "Fig. 16"
+    ],
+    "objective": "max_profit",
+    "cost": {
+     "oil_price": 12.7875
+    },
+    "reservoirs": [
+     {
+      "pressure": 220.0,
+      "productivity_index": 1.0
+     }
+    ],
+    "oil_bounds": [
+     5.0,
+     20.0
+    ],
+    "gas_bounds": [
+     1.0,
+     4.0
+    ],
+    "x0": {
+     "q_oil": 10.0,
+     "q_gas": 2.0
+    },
+    "reference": "case1_maxprofit_oil12.79",
+    "published": {
+     "table": "table13",
+     "column": "1"
+    }
+   },
+   {
+    "name": "table13_scenario2",
+    "paper": [
+     "Table 13",
+     "Fig. 16"
+    ],
+    "objective": "max_profit",
+    "cost": {
+     "oil_price": 25.575
+    },
+    "reservoirs": [
+     {
+      "pressure": 220.0,
+      "productivity_index": 1.0
+     }
+    ],
+    "oil_bounds": [
+     5.0,
+     20.0
+    ],
+    "gas_bounds": [
+     1.0,
+     4.0
+    ],
+    "x0": {
+     "q_oil": 10.0,
+     "q_gas": 2.0
+    },
+    "reference": "case1_maxprofit_oil25.58",
+    "published": {
+     "table": "table13",
+     "column": "2"
+    }
+   },
+   {
+    "name": "table13_scenario3",
+    "paper": [
+     "Table 13",
+     "Fig. 16"
+    ],
+    "objective": "max_profit",
+    "cost": {
+     "oil_price": 51.15
+    },
+    "reservoirs": [
+     {
+      "pressure": 220.0,
+      "productivity_index": 1.0
+     }
+    ],
+    "oil_bounds": [
+     5.0,
+     20.0
+    ],
+    "gas_bounds": [
+     1.0,
+     4.0
+    ],
+    "x0": {
+     "q_oil": 10.0,
+     "q_gas": 2.0
+    },
+    "reference": "case1_maxprofit_oil51.15",
+    "published": {
+     "table": "table13",
+     "column": "3"
+    }
+   }
+  ]
+ }
+}

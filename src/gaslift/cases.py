@@ -5,13 +5,21 @@ The builders reproduce the networks exactly as defined in the MATLAB scripts
 those scripts differ from the values printed in the paper (wellbore diameter,
 well segment lengths, gas-line roughness, annulus orientation), the script
 values are used by default and the differences are documented in
-``docs/paper_vs_code.md``. Use the keyword arguments to explore alternatives.
+``docs/reproduction.md`` (English) and ``docs/pt/paper_vs_code.md`` (Portuguese).
+Use the keyword arguments to explore alternatives.
+
+The same cases are stored as editable JSON files in ``cases/`` (see
+``cases/README.md``); :func:`load_case` reads them and :func:`save_case` writes
+them. ``load_case("case1")`` and ``load_case("case2")`` resolve to the files of
+the paper cases.
 """
 
 from __future__ import annotations
 
+import json
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from pathlib import Path
 
 import numpy as np
 
@@ -27,10 +35,24 @@ EPSILON_FLOW = 1.0e-6
 #: Riser outlet pressure before the choke valve, Pa (Table 6).
 RISER_OUTLET_PRESSURE = 15.0e5
 
+#: Directory with the JSON case files of the paper (``cases/`` at the repository root).
+CASES_DIR = Path(__file__).resolve().parents[2] / "cases"
+
+#: Short names of the paper cases and the JSON file of each one.
+PAPER_CASE_FILES = {
+    "case1": "case1_single_well.json",
+    "case2": "case2_multi_well.json",
+}
+
 
 @dataclass
 class CaseSetup:
-    """A network together with its nodal specifications and well bookkeeping."""
+    """A network together with its nodal specifications and well bookkeeping.
+
+    ``study`` holds the JSON-serialisable description of the paper study attached to
+    the case (operating points, rate sweeps and optimisation problems); it is
+    interpreted by :mod:`gaslift.study`.
+    """
 
     name: str
     network: Network
@@ -39,6 +61,7 @@ class CaseSetup:
     paper_node_numbers: dict[str, int] = field(default_factory=dict)
     paper_pipe_numbers: dict[str, int] = field(default_factory=dict)
     description: str = ""
+    study: dict = field(default_factory=dict)
 
     @property
     def n_wells(self) -> int:
@@ -75,24 +98,72 @@ class CaseSetup:
 
     def copy(self) -> CaseSetup:
         """Independent copy (network geometry can then be modified freely)."""
-        net = Network.from_dict(self.network.to_dict())
+        return CaseSetup.from_dict(self.to_dict())
+
+    # ------------------------------------------------------------------ serialisation
+    def to_dict(self) -> dict:
+        """JSON-serialisable description of the case (network, specifications, study)."""
+        return {
+            "name": self.name,
+            "description": self.description,
+            "network": self.network.to_dict(),
+            "specifications": self.specifications.to_dict(),
+            "wells": [w.name for w in self.wells],
+            "paper_node_numbers": dict(self.paper_node_numbers),
+            "paper_pipe_numbers": dict(self.paper_pipe_numbers),
+            "study": json.loads(json.dumps(self.study)),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> CaseSetup:
+        net = Network.from_dict(data["network"])
         specs = Specifications(net)
-        for name, s in self.specifications.items():
-            if s.pressure is not None:
-                specs.set_pressure(name, s.pressure)
-            if s.liquid_flow is not None:
-                specs.set_liquid_flow(name, s.liquid_flow)
-            if s.gas_flow is not None:
-                specs.set_gas_flow(name, s.gas_flow)
-        return CaseSetup(
-            self.name,
+        for name, s in data.get("specifications", {}).items():
+            if s.get("pressure") is not None:
+                specs.set_pressure(name, s["pressure"])
+            if s.get("liquid_flow") is not None:
+                specs.set_liquid_flow(name, s["liquid_flow"])
+            if s.get("gas_flow") is not None:
+                specs.set_gas_flow(name, s["gas_flow"])
+        well_names = data.get("wells") or [w.name for w in net.wells]
+        wells = [net.well(n) for n in well_names]
+        return cls(
+            data.get("name", net.name),
             net,
             specs,
-            list(net.wells),
-            dict(self.paper_node_numbers),
-            dict(self.paper_pipe_numbers),
-            self.description,
+            wells,
+            {k: int(v) for k, v in data.get("paper_node_numbers", {}).items()},
+            {k: int(v) for k, v in data.get("paper_pipe_numbers", {}).items()},
+            data.get("description", ""),
+            dict(data.get("study", {})),
         )
+
+
+def save_case(case: CaseSetup, path: str | Path) -> Path:
+    """Write a case to a JSON file."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(case.to_dict(), indent=1) + "\n")
+    return path
+
+
+def resolve_case_path(case: str | Path) -> Path:
+    """Path of a case file: a JSON path, or a paper case name (``case1``/``case2``)."""
+    name = str(case)
+    if name in PAPER_CASE_FILES:
+        return CASES_DIR / PAPER_CASE_FILES[name]
+    return Path(case)
+
+
+def load_case(case: str | Path) -> CaseSetup:
+    """Load a case from a JSON file or by paper case name (``"case1"``, ``"case2"``)."""
+    path = resolve_case_path(case)
+    if not path.exists():
+        raise FileNotFoundError(
+            f"case file {path} not found (known paper cases: {', '.join(PAPER_CASE_FILES)})"
+        )
+    with open(path) as f:
+        return CaseSetup.from_dict(json.load(f))
 
 
 def paper_fluid() -> FluidProperties:

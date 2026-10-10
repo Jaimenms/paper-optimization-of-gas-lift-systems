@@ -25,7 +25,7 @@ def test_case2_dimensions_and_equation_count():
     case = case2_multi_well()
     lay = case.network.layout
     assert (lay.n_nodes, lay.n_pipes) == (28, 27)
-    # The paper states 232 equations for this case, but 3N + 4S = 192 (see docs/paper_vs_code.md).
+    # The paper states 232 equations for this case, but 3N + 4S = 192 (see docs/errata.md, B1).
     assert lay.size == 192
     assert case.specifications.count == lay.n_specifications == 55
 

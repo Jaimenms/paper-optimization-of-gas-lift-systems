@@ -4,7 +4,7 @@ Revenue from produced oil, fuel-gas cost of the compressor driver, and the
 annualised capital cost of compressor, gas turbine and gas pipelines. Defaults
 reproduce the numbers of the paper; the ``*_formulation`` switches expose the
 textbook forms where the original code deviated from them (see
-``docs/paper_vs_code.md``).
+``docs/reproduction.md`` and ``docs/errata.md``).
 """
 
 from __future__ import annotations

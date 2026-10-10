@@ -22,17 +22,14 @@ notebooks = [
     "ipykernel>=6.0",
     "ipympl>=0.9",
 ]
-
-[dependency-groups]
 dev = [
     "pytest>=8.0",
     "pytest-xdist>=3.5",
     "ruff>=0.5",
-    "jupyterlab>=4.0",
-    "nbformat>=5.9",
-    "nbconvert>=7.0",
-    "ipykernel>=6.0",
 ]
+
+[project.scripts]
+gaslift = "gaslift.cli:main"
 
 [build-system]
 requires = ["hatchling"]

@@ -1,5 +1,9 @@
-# raw source material (513 MB of Word/MATLAB/.mat files) is kept out of git
+# raw source material (Word/MATLAB/.mat files) is kept out of git; see docs/conventions.md
 docs/raw/
+
+# generated outputs (make run / make eval / make figures)
+results/
+figures/
 
 # python
 __pycache__/

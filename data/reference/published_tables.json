@@ -1,0 +1,108 @@
+{
+ "source": "de Souza, J.N.M., de Medeiros, J.L., Costa, A.L.H., Nunes, G.C. (2010). Modeling, simulation and optimization of continuous gas lift systems for deepwater offshore petroleum production. Journal of Petroleum Science and Engineering 72, 277-289. Values transcribed from Tables 13-19 and from the text of Sections 4.1 and 6.1 (all printed digits).",
+ "table13": {
+  "title": "Case 1 - maximum profit results",
+  "columns": ["1", "2", "3", "Max"],
+  "rows": {
+   "cost_ratio_1e3": [14.74, 7.37, 3.69, 0.0],
+   "fuel_gas_cost_usd_m3": [0.1886, 0.1886, 0.1886, 0.0],
+   "oil_price_usd_bbl": [12.79, 25.58, 51.15, 51.15],
+   "reservoir_pressure_bar": [220, 220, 220, 220],
+   "productivity_index": [1.0, 1.0, 1.0, 1.0],
+   "produced_oil_kg_s": [9.571, 9.591, 9.596, 9.598],
+   "injected_gas_kg_s": [1.658, 1.730, 1.770, 1.812],
+   "downhole_pressure_bar": [210.43, 210.41, 210.40, 210.40],
+   "compressor_power_kW": [1002.7, 1051.8, 1078.9, 1108.1],
+   "discharge_pressure_bar": [269.18, 274.03, 276.74, 279.68],
+   "profit_1e6_usd_yr": [26.96, 55.56, 112.82, 114.56]
+  }
+ },
+ "table14": {
+  "title": "Case 2 - maximum production results for a reservoir with 220 bar",
+  "columns": ["well 1", "well 2", "well 3", "well 4"],
+  "rows": {
+   "node": [7, 13, 19, 25],
+   "productivity_index": [1.0, 2.5, 1.0, 0.5],
+   "downhole_pressure_bar": [215.80, 218.03, 214.85, 211.61],
+   "produced_oil_kg_s": [4.204, 4.933, 5.152, 4.197],
+   "injected_gas_kg_s": [0.743, 0.822, 0.897, 0.795]
+  }
+ },
+ "table15": {
+  "title": "Case 2 - maximum production results for a reservoir with 240 bar",
+  "columns": ["well 1", "well 2", "well 3", "well 4"],
+  "rows": {
+   "node": [7, 13, 19, 25],
+   "productivity_index": [1.0, 2.5, 1.0, 0.5],
+   "downhole_pressure_bar": [234.58, 237.43, 233.44, 229.45],
+   "produced_oil_kg_s": [5.417, 6.423, 6.561, 5.276],
+   "injected_gas_kg_s": [0.681, 0.744, 0.820, 0.734]
+  }
+ },
+ "table16": {
+  "title": "Case 2 - design parameters",
+  "rows": {
+   "compressor_stages": 3,
+   "compressor_efficiency": 0.8,
+   "polytropic_coefficient_printed": 1.25,
+   "suction_temperature_K": 300,
+   "suction_pressure_bar": 5,
+   "molecular_weight_kg_kmol": 25,
+   "fuel_gas_cost_usd_m3": 0.189,
+   "oil_price_usd_bbl": 51.15,
+   "gas_line_length_m": [6020, 6020, 4520, 4520],
+   "diameter_bounds_in": [1, 4],
+   "productivity_index": [1.0, 2.5, 1.0, 0.5],
+   "reservoir_pressure_bar": [220, 240]
+  }
+ },
+ "table17": {
+  "title": "Case 2 - decision variables for optimal design",
+  "columns": ["scenario 1", "scenario 2"],
+  "rows": {
+   "injected_gas_kg_s": [[0.706, 0.785, 0.854, 0.752], [0.647, 0.709, 0.780, 0.697]],
+   "produced_oil_kg_s": [[4.197, 4.952, 5.152, 4.170], [5.411, 6.444, 6.559, 5.246]],
+   "gas_line_diameter_in": [[1.77, 1.89, 1.75, 1.62], [1.66, 1.76, 1.63, 1.52]]
+  }
+ },
+ "table18": {
+  "title": "Case 2 - pipelines, compressor and turbine optimal design results",
+  "columns": ["scenario 1", "scenario 2"],
+  "rows": {
+   "compressor_power_kW": [1797.5, 1691.1],
+   "discharge_pressure_bar": [235.44, 258.02],
+   "compressor_cost_1e6_usd": [1.79, 1.72],
+   "turbine_cost_1e6_usd": [3.95, 3.76],
+   "pipeline_cost_1e6_usd": [1.05, 0.98],
+   "fuel_gas_1e6_m3_yr": [15.19, 14.29]
+  }
+ },
+ "table19": {
+  "title": "Case 2 - optimal design results",
+  "columns": ["scenario 1", "scenario 2"],
+  "rows": {
+   "total_injected_gas_1e6_m3_yr": [81.39, 74.45],
+   "total_oil_volume_1e6_bbl_yr": [4.310, 5.521],
+   "fuel_gas_cost_1e6_usd_yr": [2.86, 2.69],
+   "annualized_capital_cost_1e6_usd_yr": [6.79, 6.46],
+   "ISBL_1e6_usd": [6.79, 6.46],
+   "OSBL_1e6_usd": [20.36, 19.38],
+   "revenue_1e6_usd_yr": [220.47, 282.41],
+   "profit_1e6_usd_yr": [210.82, 273.26]
+  }
+ },
+ "text": {
+  "section_4.1_fig6": {
+   "description": "At a downhole pressure of 220 bar, 10.0 kg/s of oil require 1.0 kg/s of gas or 2.7 kg/s; the maximum oil production at 220 bar is 10.7 kg/s with 1.8 kg/s of gas.",
+   "downhole_pressure_bar": 220.0,
+   "oil_kg_s": 10.0,
+   "gas_kg_s": [1.0, 2.7],
+   "max_oil_kg_s": 10.7,
+   "gas_at_max_oil_kg_s": 1.8
+  },
+  "section_6.1.1_fig13": {
+   "description": "Optimal injected gas between 1.55 and 1.85 kg/s for downhole pressures from 180 to 260 bar.",
+   "optimal_gas_range_kg_s": [1.55, 1.85]
+  }
+ }
+}

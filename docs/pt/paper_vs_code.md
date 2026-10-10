@@ -4,17 +4,22 @@ Este documento registra as diferenças entre o texto publicado de
 
 > de Souza, J.N.M., de Medeiros, J.L., Costa, A.L.H., Nunes, G.C. (2010). *Modeling,
 > simulation and optimization of continuous gas lift systems for deepwater offshore
-> petroleum production*. Journal of Petroleum Science and Engineering,
-> doi:10.1016/j.petrol.2010.03.028 (`docs/paper/PETROL_1857.pdf`)
+> petroleum production*. Journal of Petroleum Science and Engineering 72 (3–4), 277–289,
+> doi:10.1016/j.petrol.2010.03.028 (o PDF e o material bruto ficam fora do repositório,
+> em `~/code/personal/paper-raw-material/paper-optimization-of-gas-lift-systems/`)
 
 e o código MATLAB `bbnet10` que gerou os seus números (`legacy/matlab/bbnet10`). A
 rastreabilidade entre os arquivos `.mat` e as tabelas/figuras do artigo está em
 `legacy/matlab/RESUMO_CASOS_E_ARQUIVOS.txt` e foi confirmada numericamente: os valores
 gravados nos `.mat` coincidem com todos os dígitos impressos nas Tabelas 13 a 19.
 
+Uma minuta de errata em inglês, organizada por item com página, seção e linhas da prova
+tipográfica, está em [`../errata.md`](../errata.md); o estado da reprodução de cada tabela e
+figura, em inglês, está em [`../reproduction.md`](../reproduction.md).
+
 O pacote `gaslift` **reproduz o código por padrão** (é o que permite validar a migração
 contra os resultados originais) e expõe parâmetros para as formas descritas no artigo.
-O notebook `06_artigo_vs_codigo.ipynb` quantifica o efeito de cada item.
+O notebook `06_paper_vs_code.ipynb` quantifica o efeito de cada item.
 
 ## 1. Geometria dos poços (Tabelas 2 e 7)
 

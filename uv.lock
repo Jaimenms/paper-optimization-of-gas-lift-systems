@@ -784,23 +784,17 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+dev = [
+    { name = "pytest" },
+    { name = "pytest-xdist" },
+    { name = "ruff" },
+]
 notebooks = [
     { name = "ipykernel" },
     { name = "ipympl" },
     { name = "jupyterlab" },
     { name = "nbconvert" },
     { name = "nbformat" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "ipykernel" },
-    { name = "jupyterlab" },
-    { name = "nbconvert" },
-    { name = "nbformat" },
-    { name = "pytest" },
-    { name = "pytest-xdist" },
-    { name = "ruff" },
 ]
 
 [package.metadata]
@@ -814,20 +808,12 @@ requires-dist = [
     { name = "networkx", specifier = ">=3.2" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "pandas", specifier = ">=2.0" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
+    { name = "pytest-xdist", marker = "extra == 'dev'", specifier = ">=3.5" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.5" },
     { name = "scipy", specifier = ">=1.11" },
 ]
-provides-extras = ["notebooks"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "ipykernel", specifier = ">=6.0" },
-    { name = "jupyterlab", specifier = ">=4.0" },
-    { name = "nbconvert", specifier = ">=7.0" },
-    { name = "nbformat", specifier = ">=5.9" },
-    { name = "pytest", specifier = ">=8.0" },
-    { name = "pytest-xdist", specifier = ">=3.5" },
-    { name = "ruff", specifier = ">=0.5" },
-]
+provides-extras = ["notebooks", "dev"]
 
 [[package]]
 name = "h11"

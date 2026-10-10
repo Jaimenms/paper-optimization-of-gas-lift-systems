@@ -3,8 +3,14 @@
 The notebooks are kept as generated artefacts so that their content is
 reviewable as code. Run::
 
-    uv run python scripts/build_notebooks.py          # write the .ipynb files
-    uv run python scripts/build_notebooks.py --execute  # also execute them in place
+    uv run python scripts/build_notebooks.py            # write the .ipynb files
+    uv run python scripts/build_notebooks.py --execute  # also execute them in place (~15 min)
+    uv run python scripts/build_notebooks.py --execute --only 02 05
+
+Every table or figure cell names the item of the paper it reproduces; the original
+figures of the paper are not embedded (the paper is not part of the repository), so
+each reproduced figure carries a "compare with Fig. N of the paper" note. The
+narrative is in Portuguese.
 """
 
 from __future__ import annotations
@@ -20,19 +26,35 @@ from nbformat.v4 import new_code_cell, new_markdown_cell, new_notebook
 ROOT = Path(__file__).resolve().parents[1]
 NB_DIR = ROOT / "notebooks"
 
-SETUP = """import sys
+NAMES = {
+    "01": "01_two_phase_flow_model.ipynb",
+    "02": "02_case1_single_well_simulation.ipynb",
+    "03": "03_case1_optimization.ipynb",
+    "04": "04_case2_multiwell_simulation.ipynb",
+    "05": "05_case2_optimization.ipynb",
+    "06": "06_paper_vs_code.ipynb",
+}
+
+REFERENCE = """Referência: de Souza, J.N.M., de Medeiros, J.L., Costa, A.L.H., Nunes, G.C. (2010).
+*Modeling, simulation and optimization of continuous gas lift systems for deepwater
+offshore petroleum production*. Journal of Petroleum Science and Engineering 72 (3–4),
+277–289, doi:10.1016/j.petrol.2010.03.028."""
+
+SETUP = """import json
+import sys
+import time
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from IPython.display import Image, display
+from IPython.display import display
 
 ROOT = next(p for p in [Path.cwd(), *Path.cwd().parents] if (p / "pyproject.toml").exists())
 if str(ROOT / "src") not in sys.path:
     sys.path.insert(0, str(ROOT / "src"))
 REF = ROOT / "data" / "reference"
-FIG = ROOT / "docs" / "paper" / "figures"
+published = json.load(open(REF / "published_tables.json"))   # Tables 13-19 as printed in the paper
 pd.set_option("display.precision", 4)
 pd.set_option("display.width", 140)
 plt.rcParams.update({"figure.dpi": 100, "figure.figsize": (7, 5), "axes.grid": True, "grid.alpha": 0.3})
@@ -45,6 +67,16 @@ def md(text: str):
 
 def code(text: str):
     return new_code_cell(text.strip("\n"))
+
+
+def compare(fig: str, extra: str = "") -> str:
+    """Markdown note placed after a reproduced figure."""
+    text = (
+        f"> Compare com a {fig} do artigo (a figura original não é distribuída com o repositório)."
+    )
+    if extra:
+        text += " " + extra
+    return text
 
 
 def write(name: str, cells: list) -> Path:
@@ -66,37 +98,27 @@ def write(name: str, cells: list) -> Path:
 def nb01() -> Path:
     cells = [
         md(
-            """
+            f"""
 # 01 · Modelo de escoamento bifásico: Beggs & Brill e balanço de momento
 
 Este notebook apresenta os blocos de base do simulador: as propriedades dos fluidos
 (Tabela 1 do artigo), o mapa de padrões de escoamento da correlação de Beggs & Brill
 (1973) (Fig. 2) e a integração do balanço de momento ao longo de um duto (Eqs. 1–4 e 8–10).
 
-Referência: de Souza, J.N.M., de Medeiros, J.L., Costa, A.L.H., Nunes, G.C. (2010).
-*Modeling, simulation and optimization of continuous gas lift systems for deepwater
-offshore petroleum production*. J. Pet. Sci. Eng., doi:10.1016/j.petrol.2010.03.028.
+{REFERENCE}
+
+O mapa equação ↔ código está em `docs/formulation.md`.
 """
         ),
         code(SETUP),
-        md("## Tabela 1 · Propriedades dos fluidos"),
+        md("## Tabela 1 · Propriedades dos fluidos (reproduz a Tabela 1 do artigo)"),
         code(
             """
-from gaslift import FluidProperties, paper_fluid
+from gaslift import paper_fluid
+from gaslift.tables import fluid_table
 
 fluid = paper_fluid()
-table1 = pd.DataFrame(
-    {
-        "Oil": {"Density (kg/m³)": fluid.liquid_density, "Viscosity (Pa s)": fluid.liquid_viscosity,
-                "Interfacial tension (N/m)": fluid.interfacial_tension},
-        "Gas": {"Reference density (kg/m³)": fluid.gas_reference_density,
-                "Normal density (kg/m³)": fluid.gas_normal_density,
-                "Reference pressure (bar)": fluid.reference_pressure / 1e5,
-                "Polytropic coefficient (-)": fluid.gas_polytropic_coefficient,
-                "Viscosity (Pa s)": fluid.gas_viscosity},
-    }
-)
-table1
+fluid_table(fluid)
 """
         ),
         md(
@@ -109,7 +131,7 @@ o líquido é incompressível.
             """
 p = np.linspace(1e5, 400e5, 200)
 plt.plot(p / 1e5, fluid.gas_density(p))
-plt.xlabel("Pressure (bar)"); plt.ylabel("Gas density (kg/m³)"); plt.title("Polytropic gas density");
+plt.xlabel("Pressure (bar)"); plt.ylabel("Gas density (kg/m³)"); plt.title("Polytropic gas density (Table 1)");
 """
         ),
         md(
@@ -118,20 +140,19 @@ plt.xlabel("Pressure (bar)"); plt.ylabel("Gas density (kg/m³)"); plt.title("Pol
 
 Os testes lógicos da correlação original são substituídos por funções logísticas muito
 abruptas (fator $10^6$), como no código MATLAB que gerou o artigo, para que o modelo seja
-contínuo. O mapa abaixo é construído exatamente com essa função.
+contínuo. O mapa abaixo é construído exatamente com essa função (`gaslift.beggs_brill.flow_pattern`).
 """
         ),
         code(
             """
 from gaslift.plotting import plot_flow_pattern_map
 
-fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5.5))
-plot_flow_pattern_map(ax1)
-ax1.set_title("Fig. 2 (reproduced)")
-ax2.imshow(plt.imread(FIG / "FIG_02.png")); ax2.axis("off"); ax2.set_title("Fig. 2 (paper)")
-plt.tight_layout()
+fig, ax = plt.subplots(figsize=(7, 5.5))
+plot_flow_pattern_map(ax)
+ax.set_title("Fig. 2 (reproduced) — Beggs & Brill flow map");
 """
         ),
+        md(compare("Fig. 2")),
         md(
             """
 ## Hold-up e gradiente de pressão em um duto vertical
@@ -211,87 +232,56 @@ plt.tight_layout()
 """
         ),
     ]
-    return write("01_modelo_escoamento_bifasico.ipynb", cells)
+    return write(NAMES["01"], cells)
 
 
 # =============================================================================
 # 02 - case 1 simulation
 # =============================================================================
-TABLES_CASE_CODE = """
-from gaslift.units import INCH
-
-def pipes_table(case):
-    net = case.network
-    rows = []
-    for p in net.pipes:
-        g = p.geometry
-        angles = np.degrees(g.segment_angles)
-        incl = f"{angles[0]:.0f}°" if np.allclose(angles, angles[0]) else "profile"
-        rows.append({"Line": case.paper_pipe_numbers[p.name], "Name": p.name, "Type": p.category.value,
-                     "Diameter (in)": g.inlet_diameter / INCH, "Length (m)": g.length,
-                     "Inclination": incl, "Roughness (µm)": g.roughness[0] * 1e6})
-    return pd.DataFrame(rows).set_index("Line")
-
-def nodes_table(case):
-    net = case.network
-    rows = [{"Node": case.paper_node_numbers[n.name], "Name": n.name, "Role": n.role.value,
-             "X (m)": n.x, "Y (m)": n.y, "Height (m)": n.z} for n in net.nodes]
-    return pd.DataFrame(rows).set_index("Node")
-
-def profile_table(case, pipe):
-    g = case.network.pipe(pipe).geometry
-    return pd.DataFrame({"Length (m)": g.cumulative_lengths, "Height (m)": g.points[:, 2],
-                         "x (m)": g.points[:, 0], "y (m)": g.points[:, 1]}).T
-
-def specs_table(case):
-    rows = []
-    for name, s in case.specifications.items():
-        parts = []
-        if s.pressure is not None: parts.append(f"P = {s.pressure / 1e5:g} bar")
-        if s.liquid_flow is not None: parts.append(f"wL = {s.liquid_flow:g} kg/s")
-        if s.gas_flow is not None: parts.append(f"wG = {s.gas_flow:g} kg/s")
-        rows.append({"Node": case.paper_node_numbers[name], "Name": name, "Specifications": "; ".join(parts)})
-    return pd.DataFrame(rows).set_index("Node")
-"""
-
-
 def nb02() -> Path:
     cells = [
         md(
-            """
+            f"""
 # 02 · Caso 1 — poço offshore único: rede, digrafo e simulação
 
 Reprodução da Seção 4.1 do artigo: Tabelas 2–6, Figs. 3–5 (topologia e digrafo) e
 Figs. 6–8 (curvas de nível da pressão de fundo e da pressão de injeção de gás).
 
-A rede é construída com a API do pacote `gaslift`: nós e linhas da rede de coleta mais um
-modelo de poço (`WellDesign`) que se expande em 6 nós e 6 linhas (Fig. 5).
+A rede é lida do arquivo `cases/case1_single_well.json` (o mesmo usado pela linha de
+comando `gaslift`); ela também pode ser construída com `gaslift.case1_single_well()`:
+nós e linhas da rede de coleta mais um modelo de poço (`WellDesign`) que se expande em
+6 nós e 6 linhas (Fig. 5).
+
+{REFERENCE}
 """
         ),
         code(SETUP),
         code(
             """
-from gaslift import case1_single_well, SimulationOptions, ModelOptions, IntegrationOptions
+from gaslift import SimulationOptions, ModelOptions, IntegrationOptions
+from gaslift.cases import load_case
 from gaslift.plotting import plot_case_topology, plot_digraph, plot_rate_contours, plot_pressure_path
 from gaslift.sweeps import sweep_rates
+from gaslift.tables import pipes_table, nodes_table, profile_table, specifications_table
 
-case = case1_single_well(q_oil=10.0, q_gas=2.0)
+case = load_case("case1")
 net = case.network
 print(net)
 print(f"Unknowns / equations: 3N + 4S = {net.layout.size}  (N = {net.n_nodes}, S = {net.n_pipes});"
       f" specifications: {case.specifications.count}")
 """
         ),
-        md("## Tabelas 2, 3 e 4 · Linhas da rede e perfis das linhas 2 e 8"),
-        code(TABLES_CASE_CODE + "\npipes_table(case)"),
+        md("## Tabela 2 · Linhas da rede (reproduz a Tabela 2 do artigo)"),
+        code("pipes_table(case)"),
         md(
             """
 > Os valores seguem os scripts MATLAB que geraram os resultados publicados (`case_03.m`):
 > coluna de produção de 4 in, anular de 1710 m, trecho inferior de 338 m e rugosidade nula
 > nas linhas de gás. A Tabela 2 impressa no artigo lista 5 in, 1500 m, 300 m e 100 µm —
-> ver `docs/paper_vs_code.md`.
+> ver `docs/reproduction.md` (resumo em português em `docs/pt/paper_vs_code.md`).
 """
         ),
+        md("## Tabelas 3 e 4 · Perfis das linhas 2 e 8"),
         code(
             """
 display(profile_table(case, "production_line_2").rename_axis("Line 2 (Table 3)"))
@@ -299,23 +289,27 @@ display(profile_table(case, "well_1:gas_line_1").rename_axis("Line 8 (Table 4)")
 """
         ),
         md("## Tabelas 5 e 6 · Nós e especificações"),
-        code("display(nodes_table(case))\ndisplay(specs_table(case))"),
+        code(
+            'display(nodes_table(case).rename_axis("Node (Table 5)"))\n'
+            'display(specifications_table(case).rename_axis("Node (Table 6)"))'
+        ),
         md("## Fig. 3 · Projeção isométrica"),
         code(
             """
 fig = plot_case_topology(net)
-fig.suptitle("Fig. 3 — Case 1, simplified isometric projection", y=1.02);
+fig.suptitle("Fig. 3 (reproduced) — Case 1, simplified isometric projection", y=1.02);
 """
         ),
-        code('display(Image(filename=str(FIG / "FIG_03.png"), width=900))'),
+        md(compare("Fig. 3")),
         md("## Figs. 4 e 5 · Digrafo da rede e do poço"),
         code(
             """
 fig, ax = plt.subplots(figsize=(12, 7))
 plot_digraph(net, ax, node_numbers=case.paper_node_numbers, pipe_numbers=case.paper_pipe_numbers)
-ax.set_title("Fig. 4/5 — Case 1 digraph (node numbers as in the paper; well nodes highlighted)");
+ax.set_title("Figs. 4 and 5 (reproduced) — Case 1 digraph (node numbers as in the paper; well nodes highlighted)");
 """
         ),
+        md(compare("Fig. 4 e a Fig. 5")),
         code(
             """
 M = net.incidence_matrix()
@@ -358,30 +352,28 @@ plt.tight_layout()
 
 O artigo varre a vazão de gás injetado (0,5 a 4 kg/s) e a vazão de óleo (0,5 a 20 kg/s).
 Os resultados originais desta varredura foram gerados com tolerância relativa `1e-3` na
-integração (`results_Subsea_1_2.mat`), por isso usamos o mesmo valor aqui. A varredura
-percorre a grade em serpentina com partida quente, como o script original.
+integração (`results_Subsea_1_2.mat`), por isso usamos o mesmo valor aqui (a grade e a
+tolerância vêm do bloco `study.sweeps` do arquivo do caso). A varredura percorre a grade
+em serpentina com partida quente, como o script original.
 """
         ),
         code(
             """
-q_gas = np.arange(0.5, 4.01, 0.5)
-q_oil = np.concatenate([[0.5], np.arange(1.0, 20.01, 1.0)])
-opts = SimulationOptions(model=ModelOptions(integration=IntegrationOptions(rtol=1e-3)), compute_profiles=False)
-import time
+sweep_spec = next(s for s in case.study["sweeps"] if s["name"] == "fig06_fig07_2in")
+q_gas, q_oil = np.array(sweep_spec["q_gas"]), np.array(sweep_spec["q_oil"])
+opts = SimulationOptions(model=ModelOptions(integration=IntegrationOptions(rtol=sweep_spec["rtol"])), compute_profiles=False)
 t0 = time.perf_counter()
-sweep = sweep_rates(case1_single_well(), q_gas, q_oil, opts)
+sweep = sweep_rates(case.copy(), q_gas, q_oil, opts)
 print(f"{sweep.converged.sum()} of {sweep.converged.size} points converged in {time.perf_counter() - t0:.1f} s")
 """
         ),
         code(
             """
-levels = np.arange(140, 320, 20)
-fig, axes = plt.subplots(1, 2, figsize=(15, 6.5))
-plot_rate_contours(sweep.q_gas, sweep.q_oil, sweep.downhole(0), axes[0], levels, title="Fig. 6 — Downhole pressure, node 7 (bar)")
-axes[1].imshow(plt.imread(FIG / "FIG_06.png")); axes[1].axis("off"); axes[1].set_title("Fig. 6 (paper)")
-plt.tight_layout()
+fig, ax = plt.subplots(figsize=(7.5, 6.5))
+plot_rate_contours(sweep.q_gas, sweep.q_oil, sweep.downhole(0), ax, np.arange(140, 320, 20), title="Fig. 6 (reproduced) — Downhole pressure, node 7 (bar)");
 """
         ),
+        md(compare("Fig. 6")),
         md(
             """
 A "pressão de entrada do gas lift" dos gráficos do artigo é lida no nó 9 (interconexão das
@@ -392,32 +384,32 @@ dois nós é a coluna hidrostática de gás da linha vertical de 1515 m.
         ),
         code(
             """
-levels = np.arange(200, 560, 50)
-fig, axes = plt.subplots(1, 2, figsize=(15, 6.5))
-plot_rate_contours(sweep.q_gas, sweep.q_oil, sweep.gas_junction(0), axes[0], levels, title="Fig. 7 — Gas lift inlet pressure, node 9 (bar), 2 in gas line")
-axes[1].imshow(plt.imread(FIG / "FIG_07.png")); axes[1].axis("off"); axes[1].set_title("Fig. 7 (paper)")
-plt.tight_layout()
+fig, ax = plt.subplots(figsize=(7.5, 6.5))
+plot_rate_contours(sweep.q_gas, sweep.q_oil, sweep.gas_junction(0), ax, np.arange(200, 560, 50), title="Fig. 7 (reproduced) — Gas lift inlet pressure, node 9 (bar), 2 in gas line");
 """
         ),
+        md(compare("Fig. 7")),
         code(
             """
 fig, ax = plt.subplots(figsize=(7, 6))
-plot_rate_contours(sweep.q_gas, sweep.q_oil, sweep.gas_inlet(0), ax, np.arange(150, 560, 50), title="Platform gas inlet pressure, node 10 (bar), 2 in gas line");
+plot_rate_contours(sweep.q_gas, sweep.q_oil, sweep.gas_inlet(0), ax, np.arange(150, 560, 50), title="Platform gas inlet pressure, node 10 (bar), 2 in gas line (not in the paper)");
 """
         ),
         md("## Fig. 8 · Linhas de gás de 3 in"),
         code(
             """
-sweep3 = sweep_rates(case1_single_well(gas_line_diameter_in=3.0), q_gas, q_oil, opts)
-fig, axes = plt.subplots(1, 2, figsize=(15, 6.5))
-plot_rate_contours(sweep3.q_gas, sweep3.q_oil, sweep3.gas_junction(0), axes[0], np.arange(180, 320, 20), title="Fig. 8 — Gas lift inlet pressure, node 9 (bar), 3 in gas line")
-axes[1].imshow(plt.imread(FIG / "FIG_08.png")); axes[1].axis("off"); axes[1].set_title("Fig. 8 (paper)")
-plt.tight_layout()
+from gaslift.units import INCH
+case3 = case.copy()
+case3.set_gas_line_diameter("well_1", 3.0 * INCH)
+sweep3 = sweep_rates(case3, q_gas, q_oil, opts)
+fig, ax = plt.subplots(figsize=(7.5, 6.5))
+plot_rate_contours(sweep3.q_gas, sweep3.q_oil, sweep3.gas_junction(0), ax, np.arange(180, 320, 20), title="Fig. 8 (reproduced) — Gas lift inlet pressure, node 9 (bar), 3 in gas line");
 """
         ),
+        md(compare("Fig. 8")),
         md(
             """
-## Leitura da Fig. 6 (texto do artigo)
+## Leitura da Fig. 6 (texto da Seção 4.1 do artigo)
 
 > "considering a downhole pressure of 220 bar, to produce 10.0 kg/s of petroleum it is
 > necessary to inject 1.0 kg/s of gas or a higher value of gas flow rate, equal to 2.7 kg/s
@@ -429,24 +421,26 @@ plt.tight_layout()
             """
 from scipy.interpolate import RegularGridInterpolator
 
+text = published["text"]["section_4.1_fig6"]
 interp = RegularGridInterpolator((sweep.q_oil, sweep.q_gas), sweep.downhole(0), bounds_error=False)
 qg_fine = np.linspace(0.5, 4.0, 701)
 p_at_10 = interp(np.column_stack([np.full_like(qg_fine, 10.0), qg_fine]))
 roots = qg_fine[np.flatnonzero(np.diff(np.sign(p_at_10 - 220.0)))]
-print("gas rates giving 220 bar at 10 kg/s of oil:", np.round(roots, 2), "kg/s")
+print("gas rates giving 220 bar at 10 kg/s of oil:", np.round(roots, 2), "kg/s  (paper:", text["gas_kg_s"], ")")
 
 qo_fine = np.linspace(0.5, 20.0, 781)
 QO, QG = np.meshgrid(qo_fine, qg_fine, indexing="ij")
 P = interp(np.column_stack([QO.ravel(), QG.ravel()])).reshape(QO.shape)
 feasible = np.where(P <= 220.0, QO, np.nan)
 i, j = np.unravel_index(np.nanargmax(feasible), feasible.shape)
-print(f"maximum oil at 220 bar: {qo_fine[i]:.2f} kg/s with {qg_fine[j]:.2f} kg/s of gas")
+print(f"maximum oil at 220 bar: {qo_fine[i]:.2f} kg/s with {qg_fine[j]:.2f} kg/s of gas  (paper: {text['max_oil_kg_s']} kg/s with {text['gas_at_max_oil_kg_s']} kg/s)")
 """
         ),
-        md("## Validação contra os resultados MATLAB originais"),
+        md(
+            "## Validação contra os resultados MATLAB originais (`data/reference/case1_grid_2in.json`)"
+        ),
         code(
             """
-import json
 ref = json.load(open(REF / "case1_grid_2in.json"))
 ref_p = np.array([[c[0] if c else np.nan for c in row] for row in ref["p_downhole_bar"]], dtype=float)
 ref_pg = np.array([[c[0] if c else np.nan for c in row] for row in ref["p_gasinlet_bar"]], dtype=float)
@@ -458,7 +452,7 @@ pd.DataFrame(diff_p, index=sweep.q_oil, columns=sweep.q_gas).rename_axis(index="
 """
         ),
     ]
-    return write("02_caso1_poco_unico_simulacao.ipynb", cells)
+    return write(NAMES["02"], cells)
 
 
 # =============================================================================
@@ -467,34 +461,46 @@ pd.DataFrame(diff_p, index=sweep.q_oil, columns=sweep.q_gas).rename_axis(index="
 def nb03() -> Path:
     cells = [
         md(
-            """
+            f"""
 # 03 · Caso 1 — otimização: produção máxima e lucro máximo
 
 Reprodução da Seção 6.1 do artigo: Figs. 13–16 e Tabela 13. O problema de otimização
 (Eq. 24) acopla o simulador de rede (que especifica vazões) ao modelo de reservatório
-$Q_L = PI\\,(P_{res} - P_{downhole})$ por meio de uma restrição de igualdade, resolvido com
+$Q_L = PI\\,(P_{{res}} - P_{{downhole}})$ por meio de uma restrição de igualdade, resolvido com
 programação quadrática sequencial (SLSQP do SciPy, equivalente ao `fmincon` usado no artigo).
+
+Os problemas são os do bloco `study.optimizations` de `cases/case1_single_well.json`
+(os mesmos que `gaslift run case1` resolve); cada resultado é comparado com o ótimo do
+MATLAB (`data/reference/matlab_optimization_results.json`) e, quando impresso, com o valor
+do artigo (`data/reference/published_tables.json`).
+
+{REFERENCE}
 """
         ),
         code(SETUP),
         code(
             """
-import json, time
-from gaslift import case1_single_well, SimulationOptions, ModelOptions, IntegrationOptions
-from gaslift.optimization import GasLiftProblem, Objective, Reservoir
-from gaslift.economics import CostModel
+from gaslift import tables
+from gaslift.cases import load_case
 from gaslift.plotting import plot_rate_contours
+from gaslift.study import build_problem, initial_vector, load_reference, optimization_record, simulation_options
 from gaslift.sweeps import sweep_rates
 
-matlab = json.load(open(REF / "matlab_optimization_results.json"))
+case = load_case("case1")
+matlab = load_reference("matlab_optimization_results.json")
+specs = {s["name"]: s for s in case.study["optimizations"]}
+records = {}
 
-def optimise(objective, reservoir, cost=None, x0=(10.0, 2.0)):
-    case = case1_single_well()
-    prob = GasLiftProblem(case, [reservoir], objective, cost=cost or CostModel(), oil_bounds=(5.0, 20.0), gas_bounds=(1.0, 4.0))
+def optimise(name):
+    spec = specs[name]
+    prob = build_problem(case, spec)
     t0 = time.perf_counter()
-    res = prob.solve(prob.initial_vector(*x0))
-    res.elapsed = time.perf_counter() - t0
+    res = prob.solve(initial_vector(prob, spec, records))
+    records[name] = optimization_record(name, spec, res, time.perf_counter() - t0, matlab.get(spec.get("reference")))
     return res
+
+pd.DataFrame([{"problem": s["name"], "paper": ", ".join(s["paper"]), "objective": s["objective"],
+               "reservoir": s["reservoirs"][0], "bounds": (s["oil_bounds"], s["gas_bounds"])} for s in specs.values()]).set_index("problem")
 """
         ),
         md(
@@ -510,108 +516,94 @@ maior que a publicada).
         ),
         code(
             """
-pressures = [180, 200, 220, 240, 260]
-rows = []
-for p in pressures:
-    res = optimise(Objective.MAX_PRODUCTION, Reservoir(p, np.inf))
-    ref = matlab[f"case1_maxprod_piinf_{p}bar"]
-    rows.append({"P_well (bar)": p, "oil (kg/s)": res.oil_rates[0], "gas (kg/s)": res.gas_rates[0],
-                 "oil MATLAB": ref["xopt"][0], "gas MATLAB": ref["xopt"][1],
-                 "evaluations": res.n_evaluations, "time (s)": res.elapsed})
-fig13 = pd.DataFrame(rows).set_index("P_well (bar)")
+for p in (180, 200, 220, 240, 260):
+    optimise(f"fig13_{p}bar")
+fig13 = tables.fig13_table(records)
 fig13
 """
         ),
         code(
             """
 fig, axes = plt.subplots(2, 1, figsize=(7, 7), sharex=True)
-axes[0].plot(fig13.index, fig13["oil (kg/s)"], "ko-", label="Python (SLSQP)"); axes[0].plot(fig13.index, fig13["oil MATLAB"], "r+", ms=10, label="MATLAB (paper)")
-axes[0].set_ylabel("Produced oil (kg/s)"); axes[0].legend(); axes[0].set_title("Fig. 13 — Maximum production operational conditions")
-axes[1].plot(fig13.index, fig13["gas (kg/s)"], "ko-"); axes[1].plot(fig13.index, fig13["gas MATLAB"], "r+", ms=10)
+axes[0].plot(fig13.index, fig13["oil (kg/s)"], "ko-", label="Python (SLSQP)"); axes[0].plot(fig13.index, fig13["oil MATLAB (kg/s)"], "r+", ms=10, label="MATLAB (paper)")
+axes[0].set_ylabel("Produced oil (kg/s)"); axes[0].legend(); axes[0].set_title("Fig. 13 (reproduced) — Maximum production operational conditions")
+axes[1].plot(fig13.index, fig13["gas (kg/s)"], "ko-"); axes[1].plot(fig13.index, fig13["gas MATLAB (kg/s)"], "r+", ms=10)
 axes[1].set_ylabel("Injected gas (kg/s)"); axes[1].set_xlabel("Downhole pressure (bar)")
 plt.tight_layout()
 """
         ),
+        md(
+            compare(
+                "Fig. 13",
+                "O texto do artigo (Seção 6.1.1) afirma que a vazão ótima de gás varia de 1,55 a 1,85 kg/s.",
+            )
+        ),
         code(
             """
-q_gas = np.arange(0.5, 4.01, 0.5)
-q_oil = np.concatenate([[0.5], np.arange(1.0, 20.01, 1.0)])
-opts = SimulationOptions(model=ModelOptions(integration=IntegrationOptions(rtol=1e-3)), compute_profiles=False)
-sweep = sweep_rates(case1_single_well(), q_gas, q_oil, opts)
-fig, axes = plt.subplots(1, 2, figsize=(15, 6.5))
-plot_rate_contours(sweep.q_gas, sweep.q_oil, sweep.downhole(0), axes[0], np.arange(140, 320, 20), title="Fig. 14 — Maximum production locus")
-axes[0].plot(fig13["gas (kg/s)"], fig13["oil (kg/s)"], "ro--", label="Optimum locus"); axes[0].legend(loc="upper right")
-axes[1].imshow(plt.imread(FIG / "FIG_14.png")); axes[1].axis("off"); axes[1].set_title("Fig. 14 (paper)")
-plt.tight_layout()
+sweep_spec = next(s for s in case.study["sweeps"] if s["name"] == "fig06_fig07_2in")
+sweep = sweep_rates(case.copy(), np.array(sweep_spec["q_gas"]), np.array(sweep_spec["q_oil"]), simulation_options(sweep_spec["rtol"]))
+fig, ax = plt.subplots(figsize=(7.5, 6.5))
+plot_rate_contours(sweep.q_gas, sweep.q_oil, sweep.downhole(0), ax, np.arange(140, 320, 20), title="Fig. 14 (reproduced) — Maximum production locus")
+ax.plot(fig13["gas (kg/s)"], fig13["oil (kg/s)"], "ro--", label="Optimum locus"); ax.legend(loc="upper right");
 """
         ),
+        md(compare("Fig. 14")),
         md("## 6.1.2 · Produção máxima para diferentes índices de produtividade (Fig. 15)"),
         code(
             """
-pis = [0.5, 1.0, 2.0, 5.0, 10.0]
-rows = []
-for pi in pis:
-    res = optimise(Objective.MAX_PRODUCTION, Reservoir(220.0, pi))
-    ref = matlab[f"case1_maxprod_pi{pi:g}_220bar"]
-    rows.append({"PI ((kg/s)/bar)": pi, "oil (kg/s)": res.oil_rates[0], "gas (kg/s)": res.gas_rates[0],
-                 "P_downhole (bar)": res.economics.downhole_pressure[0],
-                 "oil MATLAB": ref["xopt"][0], "gas MATLAB": ref["xopt"][1], "P_downhole MATLAB": ref["p_downhole_bar"],
-                 "time (s)": res.elapsed})
-fig15 = pd.DataFrame(rows).set_index("PI ((kg/s)/bar)")
+for pi in (0.5, 1.0, 2.0, 5.0, 10.0):
+    optimise(f"fig15_pi{pi:g}")
+fig15 = tables.fig15_table(records)
 fig15
 """
         ),
         code(
             """
 fig, axes = plt.subplots(3, 1, figsize=(7, 9), sharex=True)
-for ax, col, ref, lab in zip(axes, ["oil (kg/s)", "gas (kg/s)", "P_downhole (bar)"], ["oil MATLAB", "gas MATLAB", "P_downhole MATLAB"],
+for ax, col, ref, lab in zip(axes, ["oil (kg/s)", "gas (kg/s)", "P_downhole (bar)"], ["oil MATLAB (kg/s)", "gas MATLAB (kg/s)", "P_downhole MATLAB (bar)"],
                              ["Produced oil (kg/s)", "Injected gas (kg/s)", "Well pressure (bar)"]):
     ax.plot(fig15.index, fig15[col], "ko-", label="Python"); ax.plot(fig15.index, fig15[ref], "r+", ms=10, label="MATLAB"); ax.set_ylabel(lab)
-axes[0].legend(); axes[0].set_title("Fig. 15 — Maximum production vs productivity index (220 bar)"); axes[-1].set_xlabel("Productivity index ((kg/s)/bar)")
+axes[0].legend(); axes[0].set_title("Fig. 15 (reproduced) — Maximum production vs productivity index (220 bar)"); axes[-1].set_xlabel("Productivity index ((kg/s)/bar)")
 plt.tight_layout()
 """
         ),
+        md(compare("Fig. 15")),
         md(
             """
 ## 6.1.3 · Lucro máximo (Tabela 13 e Fig. 16)
 
 Função objetivo $\\Omega_2 = R - AGC$: receita do óleo menos custo do gás combustível da
 turbina do compressor (Eqs. 26, 31, 34 e 35). Os cenários variam o preço do óleo com o preço
-do gás fixo em 0,1886 USD/Nm³; o cenário "Max" corresponde à produção máxima (custo nulo).
+do gás fixo em 0,1886 USD/Nm³; o cenário "Max" corresponde à produção máxima (custo nulo),
+já calculado acima (`fig15_pi1`). A tabela mostra, lado a lado, os valores recalculados e os
+impressos na Tabela 13 do artigo.
 """
         ),
         code(
             """
-scenarios = [("1", 51.15 / 4, Objective.MAX_PROFIT), ("2", 51.15 / 2, Objective.MAX_PROFIT), ("3", 51.15, Objective.MAX_PROFIT), ("Max", 51.15, Objective.MAX_PRODUCTION)]
-keys = {"1": "case1_maxprofit_oil12.79", "2": "case1_maxprofit_oil25.58", "3": "case1_maxprofit_oil51.15", "Max": "case1_maxprod_pi1_220bar"}
-rows = {}
-for name, oil_price, obj in scenarios:
-    res = optimise(obj, Reservoir(220.0, 1.0), CostModel(oil_price=oil_price))
-    ec = res.economics
-    gas_price = 0.0 if obj is Objective.MAX_PRODUCTION else ec.fuel_gas_cost / max(ec.fuel_gas_volume, 1e-12)
-    ref = matlab[keys[name]]
-    rows[name] = {"Cost ratio ×10³ ((USD/Nm³)/(USD/bbl))": 1e3 * gas_price / oil_price, "Fuel gas cost (USD/Nm³)": gas_price,
-                  "Oil price (USD/bbl)": oil_price, "Produced oil (kg/s)": ec.oil_rate[0], "Injected gas (kg/s)": ec.gas_rate[0],
-                  "Downhole pressure (bar)": ec.downhole_pressure[0], "Compressor power (kW)": ec.compressor_power,
-                  "Discharge pressure PG (bar)": ec.discharge_pressure, "Profit (10⁶ USD/yr)": ec.profit,
-                  "Profit MATLAB": -ref["fob"], "Injected gas MATLAB": ref["xopt"][1]}
-table13 = pd.DataFrame(rows)
-table13
+for scenario in ("1", "2", "3"):
+    optimise(f"table13_scenario{scenario}")
+table13 = tables.table13(records, published)
+table13.rename_axis("Table 13 — Case 1 maximum profit results")
 """
         ),
         code(
             """
-ratio = table13.loc["Cost ratio ×10³ ((USD/Nm³)/(USD/bbl))"] / 1e3
+cols = [c for c in table13.columns if "(paper)" not in c]
+pcols = [c + " (paper)" for c in cols]
+ratio = table13.loc["Cost ratio (10³ (USD/Nm³)/(USD/bbl))", cols].astype(float) / 1e3
 fig, axes = plt.subplots(3, 1, figsize=(7, 9), sharex=True)
-axes[0].plot(ratio, table13.loc["Produced oil (kg/s)"], "ko-"); axes[0].set_ylabel("Produced oil (kg/s)"); axes[0].set_title("Fig. 16 — Maximum profit operational conditions")
-axes[1].plot(ratio, table13.loc["Injected gas (kg/s)"], "ko-"); axes[1].set_ylabel("Injected gas (kg/s)")
-axes[2].plot(ratio, table13.loc["Profit (10⁶ USD/yr)"], "ko-"); axes[2].set_ylabel("Profit (10⁶ USD/yr)"); axes[2].set_xlabel("Cost ratio ((USD/Nm³)/(USD/barrel))")
+for ax, row in zip(axes, ["Produced oil (kg/s)", "Injected gas (kg/s)", "Profit (10⁶ USD/yr)"]):
+    ax.plot(ratio, table13.loc[row, cols].astype(float), "ko-", label="Python (SLSQP)")
+    ax.plot(ratio, table13.loc[row, pcols].astype(float), "r+", ms=10, label="paper (Table 13)")
+    ax.set_ylabel(row)
+axes[0].legend(); axes[0].set_title("Fig. 16 (reproduced) — Maximum profit operational conditions"); axes[2].set_xlabel("Cost ratio ((USD/Nm³)/(USD/barrel))")
 plt.tight_layout()
 """
         ),
-        code('display(Image(filename=str(FIG / "FIG_16.png"), width=500))'),
+        md(compare("Fig. 16")),
     ]
-    return write("03_caso1_otimizacao.ipynb", cells)
+    return write(NAMES["03"], cells)
 
 
 # =============================================================================
@@ -620,23 +612,27 @@ plt.tight_layout()
 def nb04() -> Path:
     cells = [
         md(
-            """
+            f"""
 # 04 · Caso 2 — múltiplos poços offshore: rede e simulação
 
 Reprodução da Seção 4.2 do artigo: Tabelas 7–12, Figs. 9–10 (topologia e digrafo) e
 Figs. 11–12 (curvas de nível da pressão de fundo dos poços 1/2 e 3/4). Quatro poços com
 gas lift compartilham a linha de produção e o riser: os poços 1 e 2 entram no nó 1 e os
-poços 3 e 4 no nó 2.
+poços 3 e 4 no nó 2. A rede é lida de `cases/case2_multi_well.json`.
+
+{REFERENCE}
 """
         ),
         code(SETUP),
         code(
             """
-from gaslift import case2_multi_well, SimulationOptions, ModelOptions, IntegrationOptions
+from gaslift import SimulationOptions, ModelOptions, IntegrationOptions
+from gaslift.cases import load_case
 from gaslift.plotting import plot_case_topology, plot_digraph, plot_rate_contours
 from gaslift.sweeps import sweep_rates
+from gaslift.tables import pipes_table, nodes_table, profile_table, specifications_table
 
-case = case2_multi_well()
+case = load_case("case2")
 net = case.network
 print(net)
 print(f"Unknowns / equations: 3N + 4S = {net.layout.size}  (N = {net.n_nodes}, S = {net.n_pipes});"
@@ -647,13 +643,15 @@ print(f"Unknowns / equations: 3N + 4S = {net.layout.size}  (N = {net.n_nodes}, S
             """
 > O artigo afirma que o modelo deste caso tem 232 equações; com N = 28 nós e S = 27 linhas,
 > 3N + 4S = 192. O valor 232 (e a decomposição "27 + 27 + 27 + 56 + 95") não corresponde à
-> formulação da Seção 3.3.
+> formulação da Seção 3.3 (`docs/errata.md`, item B1).
 """
         ),
-        md("## Tabelas 7–12 · Linhas, perfis, nós e especificações"),
-        code(TABLES_CASE_CODE + "\npipes_table(case)"),
+        md("## Tabela 7 · Linhas da rede (reproduz a Tabela 7 do artigo)"),
+        code("pipes_table(case)"),
+        md("## Tabelas 8, 9 e 10 · Perfis das linhas 2, 8/14 e 20/26"),
         code(
             """
+display(profile_table(case, "production_line_2").rename_axis("Line 2 (Table 8)"))
 display(profile_table(case, "well_1:gas_line_1").rename_axis("Lines 8 and 14 (Table 9)"))
 display(profile_table(case, "well_3:gas_line_1").rename_axis("Lines 20 and 26 (Table 10)"))
 """
@@ -662,26 +660,31 @@ display(profile_table(case, "well_3:gas_line_1").rename_axis("Lines 20 and 26 (T
             """
 > A Tabela 10 do artigo lista comprimentos acumulados 0, 1005, 2505 e 4005 m para as linhas
 > 20 e 26; a geometria real (e a Tabela 16, que usa $L_{G3} = L_{G4} = 4520$ m) corresponde a
-> 3005 m + 1515 m.
+> 3005 m + 1515 m (`docs/errata.md`, item B3).
 """
         ),
-        code("display(nodes_table(case))\ndisplay(specs_table(case))"),
+        md("## Tabelas 11 e 12 · Nós e especificações"),
+        code(
+            'display(nodes_table(case).rename_axis("Node (Table 11)"))\n'
+            'display(specifications_table(case).rename_axis("Node (Table 12)"))'
+        ),
         md("## Fig. 9 · Projeção isométrica"),
         code(
             """
 fig = plot_case_topology(net)
-fig.suptitle("Fig. 9 — Case 2, simplified isometric projection", y=1.02);
-display(Image(filename=str(FIG / "FIG_09.png"), width=900))
+fig.suptitle("Fig. 9 (reproduced) — Case 2, simplified isometric projection", y=1.02);
 """
         ),
+        md(compare("Fig. 9")),
         md("## Fig. 10 · Digrafo"),
         code(
             """
 fig, ax = plt.subplots(figsize=(16, 8))
 plot_digraph(net, ax, node_numbers=case.paper_node_numbers, pipe_numbers=case.paper_pipe_numbers)
-ax.set_title("Fig. 10 — Case 2 digraph (node numbers as in the paper)");
+ax.set_title("Fig. 10 (reproduced) — Case 2 digraph (node numbers as in the paper)");
 """
         ),
+        md(compare("Fig. 10")),
         md("## Simulação de um ponto de operação: 3 kg/s de óleo e 1 kg/s de gás por poço"),
         code(
             """
@@ -696,35 +699,33 @@ sol.pipes_table()[["category", "length_m", "liquid_flow_kg_s", "gas_flow_kg_s", 
 ## Figs. 11 e 12 · Varredura de vazões
 
 Gás injetado de 0,25 a 4 kg/s e óleo de 0,5 a 8 kg/s, iguais em todos os poços
-(256 simulações de 192 incógnitas; tolerância de integração `1e-2`, como no original).
+(256 simulações de 192 incógnitas; tolerância de integração `1e-2`, como no original;
+grade definida em `study.sweeps` do arquivo do caso).
 """
         ),
         code(
             """
-import time
-q_gas = np.arange(0.25, 4.01, 0.25)
-q_oil = np.arange(0.5, 8.01, 0.5)
-opts = SimulationOptions(model=ModelOptions(integration=IntegrationOptions(rtol=1e-2)), compute_profiles=False)
+sweep_spec = case.study["sweeps"][0]
+q_gas, q_oil = np.array(sweep_spec["q_gas"]), np.array(sweep_spec["q_oil"])
+opts = SimulationOptions(model=ModelOptions(integration=IntegrationOptions(rtol=case.study["integration_rtol"])), compute_profiles=False)
 t0 = time.perf_counter()
-sweep = sweep_rates(case2_multi_well(), q_gas, q_oil, opts)
+sweep = sweep_rates(case.copy(), q_gas, q_oil, opts)
 print(f"{sweep.converged.sum()} of {sweep.converged.size} points converged in {time.perf_counter() - t0:.1f} s")
 """
         ),
         code(
             """
 levels = np.arange(140, 380, 20)
-fig, axes = plt.subplots(2, 2, figsize=(15, 13))
-plot_rate_contours(sweep.q_gas, sweep.q_oil, sweep.downhole(0), axes[0, 0], levels, title="Fig. 11 — Pressure at nodes 7 and 13 (bar)")
-axes[0, 1].imshow(plt.imread(FIG / "FIG_11.png")); axes[0, 1].axis("off"); axes[0, 1].set_title("Fig. 11 (paper)")
-plot_rate_contours(sweep.q_gas, sweep.q_oil, sweep.downhole(2), axes[1, 0], levels, title="Fig. 12 — Pressure at nodes 19 and 25 (bar)")
-axes[1, 1].imshow(plt.imread(FIG / "FIG_12.png")); axes[1, 1].axis("off"); axes[1, 1].set_title("Fig. 12 (paper)")
+fig, axes = plt.subplots(1, 2, figsize=(15, 6.5))
+plot_rate_contours(sweep.q_gas, sweep.q_oil, sweep.downhole(0), axes[0], levels, title="Fig. 11 (reproduced) — Pressure at nodes 7 and 13 (bar)")
+plot_rate_contours(sweep.q_gas, sweep.q_oil, sweep.downhole(2), axes[1], levels, title="Fig. 12 (reproduced) — Pressure at nodes 19 and 25 (bar)")
 plt.tight_layout()
 """
         ),
-        md("## Validação contra os resultados MATLAB originais"),
+        md(compare("Fig. 11 e a Fig. 12")),
+        md("## Validação contra os resultados MATLAB originais (`data/reference/case2_grid.json`)"),
         code(
             """
-import json
 ref = json.load(open(REF / "case2_grid.json"))
 ref_p = np.array([[[np.nan] * 4 if c is None else c for c in row] for row in ref["p_downhole_bar"]], dtype=float)
 diff = np.abs(sweep.downhole_pressure - ref_p)
@@ -735,7 +736,7 @@ pd.DataFrame(diff[:, :, 0], index=sweep.q_oil, columns=sweep.q_gas).rename_axis(
 """
         ),
     ]
-    return write("04_caso2_multipocos_simulacao.ipynb", cells)
+    return write(NAMES["04"], cells)
 
 
 # =============================================================================
@@ -744,54 +745,57 @@ pd.DataFrame(diff[:, :, 0], index=sweep.q_oil, columns=sweep.q_gas).rename_axis(
 def nb05() -> Path:
     cells = [
         md(
-            """
+            f"""
 # 05 · Caso 2 — otimização: produção máxima e projeto ótimo do sistema de gas lift
 
 Reprodução da Seção 6.2 do artigo: Tabelas 14 e 15 (produção máxima para reservatórios a
 220 e 240 bar) e Tabelas 16–19 (projeto ótimo com custos anualizados de compressor, turbina,
 linhas de gás e gás combustível). As variáveis de decisão do projeto são as vazões de óleo e
 gás de cada poço e o diâmetro das linhas de gás de cada poço (12 variáveis).
+
+Os problemas são os do bloco `study.optimizations` de `cases/case2_multi_well.json`; as
+tabelas mostram os valores recalculados ao lado dos impressos no artigo.
+
+{REFERENCE}
 """
         ),
         code(SETUP),
         code(
             """
-import json, time
-from gaslift import case2_multi_well
-from gaslift.optimization import GasLiftProblem, Objective, Reservoir
+from gaslift import tables
+from gaslift.cases import load_case
 from gaslift.economics import CostModel, CompressorParameters
+from gaslift.study import build_problem, initial_vector, load_reference, optimization_record
 
-matlab = json.load(open(REF / "matlab_optimization_results.json"))
-PI = [1.0, 2.5, 1.0, 0.5]
+case = load_case("case2")
+matlab = load_reference("matlab_optimization_results.json")
+specs = {s["name"]: s for s in case.study["optimizations"]}
+records, results = {}, {}
+PI = [r["productivity_index"] for r in specs["table14_maxprod_220bar"]["reservoirs"]]
+
+def optimise(name):
+    spec = specs[name]
+    prob = build_problem(case, spec)
+    t0 = time.perf_counter()
+    res = prob.solve(initial_vector(prob, spec, records))
+    records[name] = optimization_record(name, spec, res, time.perf_counter() - t0, matlab.get(spec.get("reference")))
+    results[name] = res
+    print(f"{name}: {res.n_evaluations} simulations in {time.perf_counter() - t0:.0f} s; total oil {res.oil_rates.sum():.3f} kg/s, profit {res.economics.profit:.3f} 10⁶ USD/yr")
+    return res
 """
         ),
         md("## 6.2.1 · Produção máxima (Tabelas 14 e 15)"),
         code(
             """
-def max_production(p_res):
-    case = case2_multi_well()
-    prob = GasLiftProblem(case, [Reservoir(p_res, pi) for pi in PI], Objective.MAX_PRODUCTION, oil_bounds=(0.2, 20.0), gas_bounds=(0.2, 10.0))
-    t0 = time.perf_counter()
-    res = prob.solve(prob.initial_vector(3.0, 1.0))
-    print(f"P_res = {p_res} bar: {res.n_evaluations} simulations in {time.perf_counter() - t0:.0f} s; total oil {res.oil_rates.sum():.3f} kg/s")
-    return res
-
-def production_table(res, key):
-    ref = matlab[key]
-    df = pd.DataFrame({"Well": [1, 2, 3, 4], "Node": [7, 13, 19, 25], "Productivity index ((kg/s)/bar)": PI,
-                       "Downhole pressure (bar)": res.economics.downhole_pressure, "Produced oil (kg/s)": res.oil_rates,
-                       "Injected gas (kg/s)": res.gas_rates, "Produced oil MATLAB": ref["q_oil"], "Injected gas MATLAB": ref["q_gas"]}).set_index("Well")
-    return df.T
-
-res220 = max_production(220.0)
-res240 = max_production(240.0)
+optimise("table14_maxprod_220bar")
+optimise("table15_maxprod_240bar")
 """
         ),
         code(
-            'display(production_table(res220, "case2_maxprod_220bar").rename_axis("Table 14 — 220 bar"))'
+            'tables.table14_15(records["table14_maxprod_220bar"], published["table14"], PI).rename_axis("Table 14 — 220 bar")'
         ),
         code(
-            'display(production_table(res240, "case2_maxprod_240bar").rename_axis("Table 15 — 240 bar"))'
+            'tables.table14_15(records["table15_maxprod_240bar"], published["table15"], PI).rename_axis("Table 15 — 240 bar")'
         ),
         md(
             """
@@ -807,78 +811,55 @@ gás e produz mais; (2) para distâncias semelhantes (3 e 4), mais gás vai ao p
 
 Função objetivo $\\Omega_3 = R - AGC - ATCC$. As estimativas iniciais são as soluções de
 produção máxima acima, com linhas de gás de 2 in. Limites: diâmetros entre 1 e 4 in.
+A Tabela 16 reúne os parâmetros de projeto usados (o coeficiente politrópico do compressor é
+1,4, e não 1,25 como impresso — `docs/errata.md`, item A6).
 """
         ),
         code(
             """
 comp = CompressorParameters()
 cost = CostModel()
-table16 = pd.Series({
+pub16 = published["table16"]["rows"]
+table16 = pd.DataFrame({"gaslift": {
     "Number of compressor stages (n)": comp.stages, "Overall compressor efficiency (η)": comp.efficiency,
     "Polytropic coefficient used in Eq. 31 (γ)": comp.polytropic_exponent, "Suction temperature (K)": comp.suction_temperature,
     "Suction pressure (bar)": comp.suction_pressure, "Molecular weight (kg/kmol)": comp.molecular_weight,
     "Fuel gas cost (USD/Nm³)": cost.gas_price, "Oil price (USD/barrel)": cost.oil_price,
-    "Pipe length LG1, LG2 (m)": case2_multi_well().gas_line_length("well_1"), "Pipe length LG3, LG4 (m)": case2_multi_well().gas_line_length("well_3"),
-    "Diameter bounds (in)": "1 – 4", "Productivity indexes": str(PI), "Reservoir pressure scenarios (bar)": "220, 240"}, name="Table 16")
-table16.to_frame()
+    "Pipe length LG1, LG2 (m)": case.gas_line_length("well_1"), "Pipe length LG3, LG4 (m)": case.gas_line_length("well_3"),
+    "Diameter bounds (in)": str(specs["table17_19_design_220bar"]["diameter_bounds"]), "Productivity indexes": str(PI), "Reservoir pressure scenarios (bar)": "220, 240"},
+    "paper (Table 16)": {
+    "Number of compressor stages (n)": pub16["compressor_stages"], "Overall compressor efficiency (η)": pub16["compressor_efficiency"],
+    "Polytropic coefficient used in Eq. 31 (γ)": pub16["polytropic_coefficient_printed"], "Suction temperature (K)": pub16["suction_temperature_K"],
+    "Suction pressure (bar)": pub16["suction_pressure_bar"], "Molecular weight (kg/kmol)": pub16["molecular_weight_kg_kmol"],
+    "Fuel gas cost (USD/Nm³)": pub16["fuel_gas_cost_usd_m3"], "Oil price (USD/barrel)": pub16["oil_price_usd_bbl"],
+    "Pipe length LG1, LG2 (m)": pub16["gas_line_length_m"][0], "Pipe length LG3, LG4 (m)": pub16["gas_line_length_m"][2],
+    "Diameter bounds (in)": str(pub16["diameter_bounds_in"]), "Productivity indexes": str(pub16["productivity_index"]), "Reservoir pressure scenarios (bar)": "220, 240"}})
+table16.rename_axis("Table 16 — design parameters")
 """
         ),
         code(
             """
-def optimal_design(p_res, start):
-    case = case2_multi_well()
-    prob = GasLiftProblem(case, [Reservoir(p_res, pi) for pi in PI], Objective.OPTIMAL_DESIGN,
-                          oil_bounds=(0.5, 20.0), gas_bounds=(0.1, 4.0), diameter_bounds=(1.0, 4.0))
-    x0 = prob.initial_vector(start.oil_rates, start.gas_rates, 2.0)
-    t0 = time.perf_counter()
-    res = prob.solve(x0)
-    print(f"P_res = {p_res} bar: {res.n_evaluations} simulations in {time.perf_counter() - t0:.0f} s; profit {res.economics.profit:.2f} 10⁶ USD/yr")
-    return res
-
-des220 = optimal_design(220.0, res220)
-des240 = optimal_design(240.0, res240)
+des220 = optimise("table17_19_design_220bar")
+des240 = optimise("table17_19_design_240bar")
 """
         ),
         code(
             """
-def design_tables(r1, r2):
-    k1, k2 = matlab["case2_design_220bar"], matlab["case2_design_240bar"]
-    dec = {}
-    for i in range(4):
-        dec[f"Injected gas QG{i+1} (kg/s)"] = (r1.gas_rates[i], r2.gas_rates[i], k1["xopt"][4 + i], k2["xopt"][4 + i])
-    for i in range(4):
-        dec[f"Oil flow rate QL{i+1} (kg/s)"] = (r1.oil_rates[i], r2.oil_rates[i], k1["xopt"][i], k2["xopt"][i])
-    for i in range(4):
-        dec[f"Pipe diameter DG{i+1} (in)"] = (r1.diameters_in[i], r2.diameters_in[i], k1["xopt"][8 + i], k2["xopt"][8 + i])
-    t17 = pd.DataFrame(dec, index=["Scenario 1 (220 bar)", "Scenario 2 (240 bar)", "Scenario 1 MATLAB", "Scenario 2 MATLAB"]).T
-    e1, e2 = r1.economics, r2.economics
-    t18 = pd.DataFrame({
-        "Scenario 1": [e1.compressor_power, e1.discharge_pressure, e1.compressor_cost, e1.turbine_cost, e1.pipeline_cost, e1.fuel_gas_volume],
-        "Scenario 2": [e2.compressor_power, e2.discharge_pressure, e2.compressor_cost, e2.turbine_cost, e2.pipeline_cost, e2.fuel_gas_volume],
-        "Scenario 1 MATLAB": [k1["out_CompressorPower"], k1["out_DischargePressure"], k1["out_CompressorCapitalCost"], k1["out_TurbineCapitalCost"], k1["out_PipesCapitalCost"], k1["out_FuelGasFlowRate"]],
-        "Scenario 2 MATLAB": [k2["out_CompressorPower"], k2["out_DischargePressure"], k2["out_CompressorCapitalCost"], k2["out_TurbineCapitalCost"], k2["out_PipesCapitalCost"], k2["out_FuelGasFlowRate"]],
-        "Unit": ["kW", "bar", "10⁶ USD", "10⁶ USD", "10⁶ USD", "10⁶ m³/yr"]},
-        index=["Compressor power (wC)", "Compressor discharge pressure", "Compressor capital cost (CC)", "Turbine capital cost (CT)", "Gas pipelines capital cost (CP)", "Fuel gas flow rate"])
-    t19 = pd.DataFrame({
-        "Scenario 1": [e1.injected_gas_volume.sum(), e1.oil_volume.sum(), e1.fuel_gas_cost, e1.annualized_capital_cost, e1.isbl, e1.osbl, e1.revenue, e1.profit],
-        "Scenario 2": [e2.injected_gas_volume.sum(), e2.oil_volume.sum(), e2.fuel_gas_cost, e2.annualized_capital_cost, e2.isbl, e2.osbl, e2.revenue, e2.profit],
-        "Scenario 1 MATLAB": [sum(k1["out_GasLiftFlowRate"]), sum(k1["out_OilFlowRate"]), k1["out_AnnualFuelGasCost"], k1["out_AnnualTotalCapitalCost"], k1["out_ISBL"], k1["out_OSBL"], k1["out_InValue"], k1["out_Profit"]],
-        "Scenario 2 MATLAB": [sum(k2["out_GasLiftFlowRate"]), sum(k2["out_OilFlowRate"]), k2["out_AnnualFuelGasCost"], k2["out_AnnualTotalCapitalCost"], k2["out_ISBL"], k2["out_OSBL"], k2["out_InValue"], k2["out_Profit"]],
-        "Unit": ["10⁶ m³/yr", "10⁶ barrel/yr", "10⁶ USD/yr", "10⁶ USD/yr", "10⁶ USD", "10⁶ USD", "10⁶ USD/yr", "10⁶ USD/yr"]},
-        index=["Total injected gas flow rate", "Total oil flow rate", "Fuel gas cost (AGC)", "Annualized capital cost", "ISBL", "OSBL", "Revenue (R)", "Profit"])
-    return t17, t18, t19
-
-table17, table18, table19 = design_tables(des220, des240)
-display(table17.rename_axis("Table 17 — decision variables"))
+r1, r2 = records["table17_19_design_220bar"], records["table17_19_design_240bar"]
+tables.table17(r1, r2, published).rename_axis("Table 17 — decision variables")
 """
         ),
-        code('display(table18.rename_axis("Table 18 — pipelines, compressor and turbine"))'),
-        code('display(table19.rename_axis("Table 19 — optimal design results"))'),
+        code(
+            'tables.table18(r1, r2, published).rename_axis("Table 18 — pipelines, compressor and turbine")'
+        ),
+        code('tables.table19(r1, r2, published).rename_axis("Table 19 — optimal design results")'),
         md(
             """
 As pequenas diferenças em relação ao MATLAB (terceira casa decimal) decorrem do otimizador:
 a superfície do lucro é muito plana em torno do ótimo, e `fmincon` (2009) e SLSQP param em
-pontos ligeiramente distintos com valores de função praticamente iguais.
+pontos ligeiramente distintos com valores de função praticamente iguais. Os valores da
+Tabela 18–19 avaliados exatamente nas variáveis de decisão publicadas reproduzem todos os
+dígitos impressos (ver `gaslift eval`).
 """
         ),
         code(
@@ -891,7 +872,7 @@ plt.tight_layout()
 """
         ),
     ]
-    return write("05_caso2_otimizacao.ipynb", cells)
+    return write(NAMES["05"], cells)
 
 
 # =============================================================================
@@ -900,11 +881,12 @@ plt.tight_layout()
 def nb06() -> Path:
     cells = [
         md(
-            """
+            f"""
 # 06 · Artigo × código: divergências encontradas na migração e seu efeito nos resultados
 
 Ao portar o código MATLAB (`bbnet10`) que gerou os números publicados, algumas diferenças
-entre o texto do artigo e o código foram identificadas (detalhes em `docs/paper_vs_code.md`).
+entre o texto do artigo e o código foram identificadas (detalhes em `docs/reproduction.md`
+e `docs/errata.md`; resumo em português em `docs/pt/paper_vs_code.md`).
 O pacote reproduz o código por padrão e expõe interruptores para as formas "corrigidas".
 Este notebook quantifica o efeito de cada uma delas.
 
@@ -913,17 +895,17 @@ Este notebook quantifica o efeito de cada uma delas.
 | 1 | Pressão de descarga $P_G$ | nó n+4 (interconexão das linhas de gás, −1495 m) | nó n+5 (plataforma, +20 m) |
 | 2 | Orientação do anular | geometria escrita de baixo para cima (termo hidrostático de escoamento ascendente) | gás desce: −90° |
 | 3 | Diâmetro equivalente do anular | $(D_o^2 + D_i^2)/(D_o + D_i)$ | $D_o - D_i$ (hidráulico) |
-| 4 | Custo das linhas (McCoy) | $D \\cdot a_7$ | $D^{a_7}$ (Eq. 33) |
+| 4 | Custo das linhas (McCoy) | $D \\cdot a_7$ | $D^{{a_7}}$ (Eq. 33) |
 | 5 | Expoente politrópico no compressor | 1,4 | 1,25 (Tabela 16) |
 | 6 | Potência nas correlações de custo | hp | kW (Eqs. 30 e 32) |
 | 7 | Geometria do poço | 4 in; 1710 + 338 m; rugosidade 0 nas linhas de gás | 5 in; 1500 + 300 m; 100 µm (Tabela 2) |
+
+{REFERENCE}
 """
         ),
         code(SETUP),
         code(
             """
-import json
-from dataclasses import replace
 from gaslift import case1_single_well, case2_multi_well, SimulationOptions
 from gaslift.economics import CostModel, CompressorParameters, evaluate_economics, pipeline_capital_cost, compressor_capital_cost, turbine_capital_cost
 matlab = json.load(open(REF / "matlab_optimization_results.json"))
@@ -960,7 +942,11 @@ for name, v in variants.items():
                   "Annulus top pressure (bar)": sol.pressure_bar("well_1:annulus_top"), "Gas junction, node 9 (bar)": sol.pressure_bar("well_1:gas_junction"),
                   "Platform gas inlet, node 10 (bar)": sol.pressure_bar("well_1:gas_inlet"), "Discharge pressure used (bar)": ec.discharge_pressure,
                   "Compressor power (kW)": ec.compressor_power, "Fuel gas cost (10⁶ USD/yr)": ec.fuel_gas_cost}
-pd.DataFrame(rows)
+t = pd.DataFrame(rows)
+t["Table 13 (Max, paper)"] = pd.Series({"Downhole pressure (bar)": published["table13"]["rows"]["downhole_pressure_bar"][3],
+                                        "Discharge pressure used (bar)": published["table13"]["rows"]["discharge_pressure_bar"][3],
+                                        "Compressor power (kW)": published["table13"]["rows"]["compressor_power_kW"][3]})
+t
 """
         ),
         md(
@@ -983,8 +969,10 @@ d_in, lengths = np.array(k["xopt"][8:12]), [6020.0126, 6020.0126, 4520.0126, 452
 power = k["out_CompressorPower"]
 q_gas_total = sum(k["q_gas"])
 pg = k["out_DischargePressure"]
+pub18 = published["table18"]["rows"]
 from gaslift.economics import compressor_power
 rows = {
+    "paper (Table 18, scenario 1)": {"Compressor power (kW)": pub18["compressor_power_kW"][0], "CC (10⁶ USD)": pub18["compressor_cost_1e6_usd"][0], "CT (10⁶ USD)": pub18["turbine_cost_1e6_usd"][0], "CP (10⁶ USD)": pub18["pipeline_cost_1e6_usd"][0]},
     "code (paper numbers)": {"Compressor power (kW)": power, "CC (10⁶ USD)": compressor_capital_cost(power, "hp"), "CT (10⁶ USD)": turbine_capital_cost(power, "hp"), "CP (10⁶ USD)": pipeline_capital_cost(d_in, lengths, "matlab")},
     "4: McCoy with D^a7": {"Compressor power (kW)": power, "CC (10⁶ USD)": compressor_capital_cost(power, "hp"), "CT (10⁶ USD)": turbine_capital_cost(power, "hp"), "CP (10⁶ USD)": pipeline_capital_cost(d_in, lengths, "mccoy")},
     "5: γ = 1.25": {"Compressor power (kW)": compressor_power(pg, q_gas_total, CompressorParameters(polytropic_exponent=1.25)), "CC (10⁶ USD)": np.nan, "CT (10⁶ USD)": np.nan, "CP (10⁶ USD)": np.nan},
@@ -1033,7 +1021,7 @@ for case in (case1_single_well(), case2_multi_well()):
 """
         ),
     ]
-    return write("06_artigo_vs_codigo.ipynb", cells)
+    return write(NAMES["06"], cells)
 
 
 BUILDERS = [nb01, nb02, nb03, nb04, nb05, nb06]
