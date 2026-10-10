@@ -1,0 +1,210 @@
+NOMES DOS ARQUIVOS QUE GERARAM RESULTADOS
+PARA O ARTIGO
+
+##################
+SIMULAÇÃO
+
+Simulação da planta piloto
+dados: case_07_lab
+gerador: pilot_test_06
+saídas: results_Pilot_6
+
+Simulação do poço com 5" de diâmetro
+dados: case_well_01
+gerador: well_test_02
+saídas: results_Well_2
+
+Simulação do poço com 6" de diâmetro
+dados: case_well_02
+gerador: well_test_03
+saídas: results_Well_3
+
+Simulação subsea com apenas 1 poço
+dados: case_03
+gerador: subsea_test_01_2
+saídas: results_subsea_1_2
+
+Simulação subsea com apenas 1 poço (linhas
+de gás com 3")
+dados: case_03_2
+gerador: subsea_test_02
+saídas: results_subsea_2
+
+
+###################
+OTIMIZAÇÃO DE PRODUÇÃO DE ÓLEO
+CASO ON-SHORE SINGLE WELL
+
+Otimização para máxima produção a 140 bar
+dados: case_well_01
+gerador: optimize_v01
+saídas: save result_opt_well_v01
+análise: analisa_optimize_v01
+
+Otimização para máxima produçao a 130 bar
+gerador: optimize_v02
+saídas: save result_opt_well_v02
+
+Otimização para máxima produçao 120 bar
+gerador: optimize_v03
+saídas: save result_opt_well_v03
+
+Otimização para máxima produçao 110 bar
+gerador: optimize_v04
+saídas: save result_opt_well_v04
+
+Otimização para máxima produçao 100 bar (NÃO OTIMIZOU)
+gerador: optimize_v05
+saídas: save result_opt_well_v05
+
+Otimização para máxima produçao 150 bar
+gerador: optimize_v06
+saídas: save result_opt_well_v06
+
+Otimização para máxima produçao 160 bar
+gerador: optimize_v07
+saídas: save result_opt_well_v07
+
+Otimização para máxima produçao 170 bar
+gerador: optimize_v08
+saídas: save result_opt_well_v08
+
+Otimização para máxima produçao 180 bar  (NÃO OTIMIZOU)
+gerador: optimize_v09
+saídas: save result_opt_well_v09
+
+Otimização para máxima produçao 190 bar  (NÃO OTIMIZOU)
+gerador: optimize_v10
+saídas: save result_opt_well_v10
+
+
+###################
+OTIMIZAÇÃO DO LUCRO
+- os casos a seguir estavam configurados para considerar o custo do gas injetado e não do gás combustível
+- desconsiderá-los
+
+
+Otimização a 140 bar (preços da tabela)
+dados: case_well_21
+gerador: optimize_v21
+saídas: save result_opt_well_v21
+análise: analisa_optimize_v21
+
+Otimização a 140 bar (1/2 do preço do óleo)
+dados: case_well_31
+gerador: optimize_v31
+saídas: save result_opt_well_v31
+análise: analisa_optimize_v31
+
+Otimização a 140 bar (1/4 do preço do óleo)
+dados: case_well_41
+gerador: optimize_v41
+saídas: save result_opt_well_v41
+análise: analisa_optimize_v41
+
+Otimização a 140 bar (2x preço do óleo) (NÃO OTIMIZOU)
+dados: case_well_51
+gerador: optimize_v51
+saídas: save result_opt_well_v51
+análise: analisa_optimize_v51
+
+#####################
+COMPARADORES
+
+Comparação entre result_opt_well_v04, result_opt_well_v03, result_opt_well_v02, result_opt_well_v01, result_opt_well_v06, result_opt_well_v07_2, result_opt_well_v08
+>>compara_optimize_v01
+
+Comparação entre result_opt_well_v41, result_opt_well_v31, result_opt_well_v21, result_opt_well_v01
+>>compara_optimize_v02
+
+
+###################
+OTIMIZAÇÃO DE PRODUÇÃO DE ÓLEO
+CASO OFF-SHORE SINGLE WELL
+
+Otimização a 220 bar (preços da tabela)
+dados: case_3
+gerador: optimize_subsea_v01
+saídas: result_opt_subsea_v01
+análise: analisa_optimize_subsea_v01
+
+Otimização a 160 bar (preços da tabela)
+dados: case_3
+gerador: optimize_subsea_v02
+saídas: result_opt_subsea_v02
+análise: analisa_optimize_subsea_v02
+
+Otimização a 180 bar (preços da tabela)
+dados: case_3
+gerador: optimize_subsea_v03
+saídas: result_opt_subsea_v03
+análise: analisa_optimize_subsea_v03
+
+Otimização a 200 bar (preços da tabela)
+dados: case_3
+gerador: optimize_subsea_v04
+saídas: result_opt_subsea_v04
+análise: analisa_optimize_subsea_v04
+
+Otimização a 240 bar (preços da tabela)
+dados: case_3
+gerador: optimize_subsea_v05
+saídas: result_opt_subsea_v05
+análise: analisa_optimize_subsea_v05
+
+Otimização a 260 bar (preços da tabela)
+dados: case_3
+gerador: optimize_subsea_v06
+saídas: result_opt_subsea_v06
+análise: analisa_optimize_subsea_v06
+
+
+###################
+OTIMIZAÇÃO DE LUCRO
+
+Otimização a 220 bar (preços da tabela)
+dados: case_3
+gerador: optimize_subsea_v21
+saídas: save result_opt_subsea_v21
+análise: analisa_optimize_subsea_v21
+
+Otimização a 220 bar (1/2 do preço do óleo)
+dados: case_3
+gerador: optimize_subsea_v31
+saídas: save result_opt_well_v31
+análise: analisa_optimize_subsea_v31
+
+Otimização a 220 bar (1/4 do preço do óleo)
+dados: case_3
+gerador: optimize_subsea_v41
+saídas: save result_opt_well_v41
+análise: analisa_optimize_subsea_v41
+
+Otimização a 220 bar (2x preço do óleo) (NÃO OTIMIZOU)
+dados: case_3
+gerador: optimize_subsea_v51
+saídas: save result_opt_well_v51
+análise: analisa_optimize_subsea_v51
+
+
+#####################
+COMPARADORES
+
+Comparação entre
+result_opt_subsea_v01result_opt_subsea_v02result_opt_subsea_v03result_opt_subsea_v04result_opt_subsea_v05result_opt_subsea_v06>>compara_optimize_subsea_v01
+
+Comparação entre
+result_opt_subsea_v01result_opt_subsea_v21result_opt_subsea_v31result_opt_subsea_v41result_opt_subsea_v51>>compara_optimize_subsea_v02
+
+
+
+
+
+#####################
+DESIGN
+
+Otimização single well
+dados: case_3
+gerador: optimize_subsea_v101
+saídas: save result_opt_subsea_v101
+análise: analisa_optimize_subsea_v101

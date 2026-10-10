@@ -1,0 +1,17 @@
+# raw source material (513 MB of Word/MATLAB/.mat files) is kept out of git
+docs/raw/
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+.cache/
+
+# OS
+.DS_Store

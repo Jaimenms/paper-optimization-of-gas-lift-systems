@@ -1,0 +1,60 @@
+[project]
+name = "gaslift"
+version = "0.1.0"
+description = "Steady-state two-phase pipe-network simulation and continuous gas-lift optimization (Python port of de Souza et al., J. Pet. Sci. Eng. 2010)"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Jaime N. M. de Souza" }]
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "pandas>=2.0",
+    "matplotlib>=3.8",
+    "networkx>=3.2",
+]
+
+[project.optional-dependencies]
+notebooks = [
+    "jupyterlab>=4.0",
+    "nbformat>=5.9",
+    "nbconvert>=7.0",
+    "ipykernel>=6.0",
+    "ipympl>=0.9",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-xdist>=3.5",
+    "ruff>=0.5",
+    "jupyterlab>=4.0",
+    "nbformat>=5.9",
+    "nbconvert>=7.0",
+    "ipykernel>=6.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gaslift"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["slow: long-running regression tests (optimizations, full grids)"]
+addopts = "-m 'not slow'"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "NPY", "RUF"]
+ignore = ["E741"]
+
+[tool.ruff.lint.per-file-ignores]
+# notebook cell sources are embedded as strings (long lines, typographic characters)
+"scripts/build_notebooks.py" = ["E501", "RUF001"]
