@@ -64,6 +64,8 @@ def plot_rate_contours(
 # --------------------------------------------------------------------------- 3-D topology
 def _box(ax, x0, x1, y0, y1, z0, z1, color, alpha):
     """Translucent box faces (sea water / sea bed)."""
+    from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+
     faces = [
         [(x0, y0, z1), (x0, y1, z1), (x1, y1, z1), (x1, y0, z1)],
         [(x0, y0, z0), (x0, y1, z0), (x0, y1, z1), (x0, y0, z1)],
@@ -71,10 +73,24 @@ def _box(ax, x0, x1, y0, y1, z0, z1, color, alpha):
         [(x0, y0, z0), (x1, y0, z0), (x1, y0, z1), (x0, y0, z1)],
         [(x0, y1, z0), (x1, y1, z0), (x1, y1, z1), (x0, y1, z1)],
     ]
-    from mpl_toolkits.mplot3d.art3d import Poly3DCollection
-
     coll = Poly3DCollection(faces, facecolor=color, edgecolor="0.3", linewidths=0.5, alpha=alpha)
     ax.add_collection3d(coll)
+
+
+def _bounds(network: Network, seafloor: float, sea_level: float, pad: float = 0.05):
+    pts = np.vstack([p.geometry.points for p in network.pipes])
+    x0, x1 = pts[:, 0].min(), pts[:, 0].max()
+    y0, y1 = pts[:, 1].min(), pts[:, 1].max()
+    z0, z1 = min(pts[:, 2].min(), seafloor), max(pts[:, 2].max(), sea_level)
+    dx, dy, dz = max(x1 - x0, 1.0), max(y1 - y0, 1.0), max(z1 - z0, 1.0)
+    return (
+        x0 - pad * dx,
+        x1 + pad * dx,
+        y0 - pad * dy,
+        y1 + pad * dy,
+        z0 - pad * dz,
+        z1 + pad * dz,
+    )
 
 
 def plot_topology_3d(
@@ -85,7 +101,7 @@ def plot_topology_3d(
     nodes: Sequence[str] | None = None,
     seafloor: float = -1500.0,
     sea_level: float = 0.0,
-    view: tuple[float, float] = (50.0, -67.5),
+    view: tuple[float, float] = (28.0, -50.0),
     legend: bool = True,
     bounds: tuple[float, float, float, float, float, float] | None = None,
 ) -> Axes:
@@ -111,23 +127,15 @@ def plot_topology_3d(
             s=40,
             depthshade=False,
         )
-    pts = np.vstack([p.geometry.points for p in network.pipes])
-    if bounds is None:
-        x0, x1 = pts[:, 0].min(), pts[:, 0].max()
-        y0, y1 = pts[:, 1].min(), pts[:, 1].max()
-        z0, z1 = min(pts[:, 2].min(), seafloor), max(pts[:, 2].max(), sea_level)
-        pad = 0.05
-        dx, dy, dz = max(x1 - x0, 1.0), max(y1 - y0, 1.0), max(z1 - z0, 1.0)
-        x0, x1, y0, y1 = x0 - pad * dx, x1 + pad * dx, y0 - pad * dy, y1 + pad * dy
-        z0, z1 = z0 - pad * dz, z1 + pad * dz
-    else:
-        x0, x1, y0, y1, z0, z1 = bounds
+    x0, x1, y0, y1, z0, z1 = bounds if bounds is not None else _bounds(network, seafloor, sea_level)
     _box(ax, x0, x1, y0, y1, z0, seafloor, "tan", 0.25)
     _box(ax, x0, x1, y0, y1, seafloor, sea_level, "cyan", 0.15)
     ax.set_xlim(x0, x1)
     ax.set_ylim(y0, y1)
     ax.set_zlim(z0, z1)
-    ax.set_box_aspect((x1 - x0, y1 - y0, (z1 - z0) * 1.5))
+    dx, dy, dz = x1 - x0, y1 - y0, z1 - z0
+    ax.set_box_aspect((max(dx, 0.3 * dy), dy, dz))
+    ax.set_xticks([round(x0), round(x1)])
     ax.set_xlabel("x (m)")
     ax.set_ylabel("y (m)")
     ax.set_zlabel("z (m)")
@@ -146,58 +154,92 @@ def plot_topology_3d(
     return ax
 
 
-def plot_case_topology(network: Network, figsize=(14, 6)) -> Figure:
+def plot_case_topology(network: Network, figsize=(15, 6.5)) -> Figure:
     """Two-panel isometric view: production system (left) and gas supply system (right)."""
     fig = plt.figure(figsize=figsize)
     ax1 = fig.add_subplot(1, 2, 1, projection="3d")
     ax2 = fig.add_subplot(1, 2, 2, projection="3d")
-    prod_nodes = [
-        n.name
-        for n in network.nodes
-        if n.role
-        in (
-            NodeRole.CONNECTION,
-            NodeRole.OUTLET,
-            NodeRole.WELLHEAD,
-            NodeRole.INJECTION_POINT,
-            NodeRole.DOWNHOLE,
-        )
-    ]
-    gas_nodes = [
-        n.name
-        for n in network.nodes
-        if n.role
-        in (
-            NodeRole.INJECTION_POINT,
-            NodeRole.ANNULUS_TOP,
-            NodeRole.GAS_JUNCTION,
-            NodeRole.GAS_INLET,
-        )
-    ]
-    pts = np.vstack([p.geometry.points for p in network.pipes])
-    pad = 0.05
-    x0, x1 = pts[:, 0].min(), pts[:, 0].max()
-    y0, y1 = pts[:, 1].min(), pts[:, 1].max()
-    z0, z1 = min(pts[:, 2].min(), -1500.0), max(pts[:, 2].max(), 0.0)
-    dx, dy, dz = max(x1 - x0, 1.0), max(y1 - y0, 1.0), max(z1 - z0, 1.0)
-    bounds = (
-        x0 - pad * dx,
-        x1 + pad * dx,
-        y0 - pad * dy,
-        y1 + pad * dy,
-        z0 - pad * dz,
-        z1 + pad * dz,
-    )
+    prod_roles = {
+        NodeRole.CONNECTION,
+        NodeRole.OUTLET,
+        NodeRole.WELLHEAD,
+        NodeRole.INJECTION_POINT,
+        NodeRole.DOWNHOLE,
+    }
+    gas_roles = {
+        NodeRole.INJECTION_POINT,
+        NodeRole.ANNULUS_TOP,
+        NodeRole.GAS_JUNCTION,
+        NodeRole.GAS_INLET,
+    }
+    prod_nodes = [n.name for n in network.nodes if n.role in prod_roles]
+    gas_nodes = [n.name for n in network.nodes if n.role in gas_roles]
+    bounds = _bounds(network, -1500.0, 0.0)
     plot_topology_3d(
         network, ax1, categories=PRODUCTION_CATEGORIES, nodes=prod_nodes, bounds=bounds
     )
     plot_topology_3d(network, ax2, categories=GAS_CATEGORIES, nodes=gas_nodes, bounds=bounds)
     ax1.set_title("Production system")
     ax2.set_title("Gas-lift supply system")
+    fig.subplots_adjust(wspace=0.02, left=0.02, right=0.98)
     return fig
 
 
 # --------------------------------------------------------------------------- digraph
+def _schematic_positions(network: Network) -> dict[str, tuple[float, float]]:
+    """Node positions for a convergent gathering network with well sub-graphs.
+
+    Non-well nodes are placed on a horizontal line ordered by their distance (in
+    pipes) to the outlet, with mostly vertical pipes (risers) drawn upwards. Each
+    well is drawn below its attachment node as in Fig. 5 of the paper: wellhead,
+    injection point and downhole in a column, the annulus top and the gas supply
+    chain to the right.
+    """
+    well_nodes = {n for w in network.wells for n in w.nodes}
+    trunk = [n for n in network.nodes if n.name not in well_nodes]
+    m = network.incidence_matrix()
+    # distance to outlet, following the (unique) outgoing pipe of each node
+    rank: dict[str, int] = {}
+    for n in trunk:
+        i = network.node_index(n.name)
+        steps, visited = 0, {i}
+        while True:
+            out = np.flatnonzero(m[i, :] < 0)
+            if out.size == 0:
+                break
+            head = int(np.flatnonzero(m[:, out[0]] > 0)[0])
+            if head in visited:
+                break
+            visited.add(head)
+            i, steps = head, steps + 1
+        rank[n.name] = steps
+    max_rank = max(rank.values(), default=0)
+    pos: dict[str, tuple[float, float]] = {}
+    spacing = 3.0
+    for n in trunk:
+        pos[n.name] = ((max_rank - rank[n.name]) * spacing, 0.0)
+    # risers: draw the head of a mostly vertical pipe above its tail
+    for p in network.pipes:
+        if p.start in pos and p.end in pos:
+            v = p.geometry.end - p.geometry.start
+            if abs(v[2]) > np.hypot(v[0], v[1]):
+                pos[p.end] = (pos[p.start][0], pos[p.start][1] + 1.3)
+    per_attach: dict[str, int] = {}
+    for w in network.wells:
+        attach = w.design.attach_to
+        j = per_attach.get(attach, 0)
+        per_attach[attach] = j + 1
+        xa = pos[attach][0] if attach in pos else 0.0
+        xw = xa - 0.9 + 1.4 * j
+        pos[w.wellhead] = (xw, -0.7)
+        pos[w.injection_point] = (xw, -1.6)
+        pos[w.downhole] = (xw, -2.3)
+        pos[w.annulus_top] = (xw + 0.55, -1.0)
+        pos[w.gas_junction] = (xw + 0.95, -1.55)
+        pos[w.gas_inlet] = (xw + 0.95, -2.3)
+    return pos
+
+
 def plot_digraph(
     network: Network,
     ax: Axes | None = None,
@@ -205,31 +247,26 @@ def plot_digraph(
     node_numbers: dict[str, int] | None = None,
     pipe_numbers: dict[str, int] | None = None,
     highlight_wells: bool = True,
+    layout: str = "schematic",
 ) -> Axes:
-    """Schematic digraph of the network (paper Figs. 4, 5 and 10).
+    """Digraph of the network (paper Figs. 4, 5 and 10).
 
-    Nodes are placed by their ``y`` coordinate (along the production line) and
-    elevation, with gas-side nodes offset to the right; edges are the pipes.
+    ``layout="schematic"`` draws wells as compact sub-graphs below the gathering
+    line; ``layout="coordinates"`` uses the ``y`` coordinate and elevation of the
+    nodes.
     """
     ax = ax or plt.gca()
     g = nx.DiGraph()
-    pos: dict[str, tuple[float, float]] = {}
-    gas_roles = {NodeRole.ANNULUS_TOP, NodeRole.GAS_JUNCTION, NodeRole.GAS_INLET}
     for n in network.nodes:
         g.add_node(n.name)
-        x = (
-            n.y
-            + (350.0 if n.role in gas_roles else 0.0)
-            + (200.0 if n.role == NodeRole.WELLHEAD else 0.0)
-        )
-        z = n.z
-        if n.role == NodeRole.ANNULUS_TOP:
-            z = n.z - 300.0
-        if n.role == NodeRole.GAS_JUNCTION:
-            z = n.z + 250.0
-        pos[n.name] = (x, z)
     for p in network.pipes:
         g.add_edge(p.start, p.end, name=p.name, category=p.category)
+    if layout == "schematic":
+        pos = _schematic_positions(network)
+    elif layout == "coordinates":
+        pos = {n.name: (n.y, n.z) for n in network.nodes}
+    else:
+        raise ValueError(f"unknown layout {layout!r}")
     labels = {
         n: str(node_numbers.get(n, "")) if node_numbers else n.split(":")[-1] for n in g.nodes
     }
@@ -255,14 +292,26 @@ def plot_digraph(
             arrows=True,
             arrowsize=14,
             node_size=450,
-            connectionstyle="arc3,rad=0.0",
         )
     if pipe_numbers:
         edge_labels = {(p.start, p.end): f"({pipe_numbers[p.name]})" for p in network.pipes}
         nx.draw_networkx_edge_labels(
             g, pos, edge_labels=edge_labels, ax=ax, font_size=7, rotate=False
         )
+    handles = []
+    for cat in (
+        PipeCategory.PRODUCTION,
+        PipeCategory.WELLBORE,
+        PipeCategory.ANNULUS,
+        PipeCategory.GAS,
+    ):
+        if any(p.category == cat for p in network.pipes):
+            st = _STYLE[cat]
+            handles.append(Line2D([], [], color=st["color"], ls=st["ls"], lw=2, label=st["label"]))
+    if handles:
+        ax.legend(handles=handles, loc="upper left", fontsize=8)
     ax.set_axis_off()
+    ax.margins(0.08)
     return ax
 
 
